@@ -1,17 +1,57 @@
-module "eks" {
-  source          = "terraform-aws-modules/eks/aws"
-  version         = "20.8.4" # oder die aktuelle, bekannte funktionierende Version
-  cluster_name    = "my-k8s-cluster"
-  cluster_version = "1.27"
-  subnet_ids      = module.vpc.public_subnets
-  vpc_id          = module.vpc.vpc_id
+provider "aws" {
+  region = var.aws_region
+}
 
-  eks_managed_node_groups = {
-    default = {
-      min_size     = 2
-      max_size     = 2
-      desired_size = 2
-      instance_types = ["t3.medium"]
-    }
+resource "aws_vpc" "main" {
+  cidr_block = "10.0.0.0/16"
+}
+
+resource "aws_subnet" "main" {
+  vpc_id                  = aws_vpc.main.id
+  cidr_block              = "10.0.1.0/24"
+  map_public_ip_on_launch = true
+}
+
+resource "aws_security_group" "k8s" {
+  name        = "k8s-sg"
+  description = "Allow SSH and Kubernetes ports"
+  vpc_id      = aws_vpc.main.id
+
+  ingress {
+    description = "SSH"
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
   }
+
+  ingress {
+    description = "Kubernetes ports"
+    from_port   = 0
+    to_port     = 65535
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+}
+
+resource "aws_instance" "k8s" {
+  count         = 3
+  ami           = "ami-0fc5d935ebf8bc3bc" # Ubuntu 22.04 (us-east-1)
+  instance_type = "t2.medium"
+  subnet_id     = aws_subnet.main.id
+  key_name      = var.key_pair
+  security_groups = [aws_security_group.k8s.id]
+
+  tags = {
+    Name = "k8s-${count.index == 0 ? "master" : "worker${count.index}"}"
+  }
+
+  user_data = file("init.sh")
 }
