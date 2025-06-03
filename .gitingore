@@ -1,0 +1,22 @@
+# Terraform state files
+terraform.tfstate
+terraform.tfstate.backup
+
+# .terraform directory
+.terraform/
+
+# Sensitive files
+*.pem
+*.key
+*.crt
+terraform.tfvars
+
+# IDE / OS files
+*.log
+*.swp
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+# Terraform system dir
+.terraform/
