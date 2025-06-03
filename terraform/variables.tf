@@ -11,7 +11,7 @@ variable "key_name" {
   type        = string
 }
 
-variable "private_key_path" {
-  description = "Pfad zur privaten SSH-Key-Datei"
+variable "private_key" {
+  description = "SSH Private Key (über GitHub Secret)"
   type        = string
 }
