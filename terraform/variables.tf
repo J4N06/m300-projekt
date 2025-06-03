@@ -1,7 +1,17 @@
-variable "aws_region" {
+variable "region" {
   default = "us-east-1"
 }
 
-variable "key_pair" {
-  description = "Name of an existing AWS EC2 Key Pair"
+variable "instance_type" {
+  default = "t2.micro"
+}
+
+variable "key_name" {
+  description = "SSH Key-Pair Name from AWS"
+  type        = string
+}
+
+variable "private_key_path" {
+  description = "Pfad zur privaten SSH-Key-Datei"
+  type        = string
 }
