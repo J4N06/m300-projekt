@@ -27,9 +27,9 @@ jobs:
       working-directory: terraform/
 
     - name: Terraform Plan
-      run: terraform plan -var="private_key=${{ secrets.SSH_PRIVATE_KEY }}" -var="key_name=terraform-k8s"
+      run: terraform plan -var="private_key=${{ secrets.SSH_PRIVATE_KEY }}" -var="key_name=tf-key"
       working-directory: terraform/
 
     - name: Terraform Apply
-      run: terraform apply -auto-approve -var="private_key=${{ secrets.SSH_PRIVATE_KEY }}" -var="key_name=terraform-k8s"
+      run: terraform apply -auto-approve -var="private_key=${{ secrets.SSH_PRIVATE_KEY }}" -var="key_name=tf-key"
       working-directory: terraform/
