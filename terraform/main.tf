@@ -3,13 +3,12 @@ provider "aws" {
 }
 
 resource "aws_instance" "k8s_node" {
-  count                       = 3
-  ami                         = "ami-0c02fb55956c7d316" # Ubuntu 22.04 LTS in us-east-1
-  instance_type               = var.instance_type
-  key_name                    = var.key_name
-  subnet_id                   = aws_subnet.public[0].id
-  vpc_security_group_ids      = [aws_security_group.k8s_ssh.id]
-  associate_public_ip_address = true
+  count                  = 3
+  ami                    = "ami-0c02fb55956c7d316" # Ubuntu 22.04 LTS (us-east-1)
+  instance_type          = var.instance_type
+  key_name               = var.key_name
+  subnet_id              = aws_subnet.public[0].id
+  vpc_security_group_ids = [aws_security_group.k8s_ssh.id]
 
   tags = {
     Name = "k8s-node-${count.index}"

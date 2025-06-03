@@ -7,11 +7,11 @@ variable "instance_type" {
 }
 
 variable "key_name" {
-  description = "SSH Key-Pair Name from AWS"
-  type        = string
+  default = "tf-key"
 }
 
 variable "private_key" {
-  description = "SSH Private Key (über GitHub Secret)"
+  description = "SSH private key as plain text"
   type        = string
+  sensitive   = true
 }
