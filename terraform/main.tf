@@ -44,7 +44,7 @@ resource "aws_security_group" "k8s_sg" {
 resource "aws_instance" "k8s_nodes" {
   count                       = 3
   ami                         = data.aws_ami.ubuntu.id
-  instance_type               = "t3.medium"
+  instance_type               = "t2.micro"
   subnet_id                   = aws_subnet.main.id
   vpc_security_group_ids      = [aws_security_group.k8s_sg.id]
   associate_public_ip_address = true
