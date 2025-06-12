@@ -1,17 +1,16 @@
-variable "region" {
-  default = "us-east-1"
+variable "aws_access_key" {
+  description = "AWS Access Key ID"
 }
 
-variable "instance_type" {
-  default = "t2.micro"
+variable "aws_secret_key" {
+  description = "AWS Secret Access Key"
 }
 
-variable "key_name" {
-  default = "tf-key"
+variable "aws_session_token" {
+  description = "AWS Session Token"
 }
 
-variable "private_key" {
-  description = "SSH private key as plain text"
-  type        = string
-  sensitive   = true
+variable "aws_region" {
+  description = "AWS Region"
+  default     = "us-east-1"
 }
