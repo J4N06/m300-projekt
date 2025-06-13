@@ -9,6 +9,9 @@ jobs:
   terraform:
     name: Deploy Infrastructure
     runs-on: ubuntu-latest
+    
+    env:
+      TF_VAR_k8s_ssh_public_key: ${{ secrets.k8s_ssh_public_key }}
 
     defaults:
       run:

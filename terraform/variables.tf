@@ -15,6 +15,7 @@ variable "key_name" {
 }
 
 variable "k8s_ssh_public_key" {
-  description = "SSH Public Key Inhalt aus GitHub Secret"
   type        = string
+  description = "Public SSH key for EC2 access"
 }
+
