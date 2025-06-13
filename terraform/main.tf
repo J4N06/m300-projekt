@@ -5,8 +5,9 @@ provider "aws" {
 # SSH Key (muss existieren)
 resource "aws_key_pair" "k8s_key" {
   key_name   = var.key_name
-  public_key = file(var.public_key_path)
+  public_key = var.k8s_ssh_public_key
 }
+
 
 # VPC
 resource "aws_vpc" "main" {

@@ -14,7 +14,7 @@ variable "key_name" {
   default = "k8s-key"
 }
 
-variable "public_key_path" {
-  description = "Pfad zur SSH Public Key Datei"
-  default     = "~/.ssh/k8s/id_rsa.pub"
+variable "k8s_ssh_public_key" {
+  description = "SSH Public Key Inhalt aus GitHub Secret"
+  type        = string
 }
