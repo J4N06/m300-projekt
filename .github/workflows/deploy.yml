@@ -47,32 +47,26 @@ jobs:
       - name: Get Public IPs from Terraform
         id: get_ips
         run: |
-          IPS=$(terraform output -json instance_public_ips | jq -r '.[]')
-          echo "$IPS" > ../ansible/ips.txt
+          IPS=$(terraform output -json instance_public_ips | jq -r '.[]' | paste -sd "," -)
+          echo "PUB_DNS=$IPS" >> $GITHUB_ENV
 
       - name: Create Ansible Inventory File
         run: |
-          readarray -t IPS < ../ansible/ips.txt
-          MASTER=${IPS[0]}
-          WORKER1=${IPS[1]}
-          WORKER2=${IPS[2]}
+          IFS=',' read -r MASTER WORKER1 WORKER2 <<< "$PUB_DNS"
 
-          cat <<EOF > ../ansible/inventory.ini
-[master]
-$MASTER ansible_user=ubuntu
+          mkdir -p ../ansible
+          echo "[master]" > ../ansible/inventory.ini
+          echo "$MASTER ansible_user=ubuntu" >> ../ansible/inventory.ini
 
-[worker]
-$WORKER1 ansible_user=ubuntu
-$WORKER2 ansible_user=ubuntu
+          echo "[worker]" >> ../ansible/inventory.ini
+          echo "$WORKER1 ansible_user=ubuntu" >> ../ansible/inventory.ini
+          echo "$WORKER2 ansible_user=ubuntu" >> ../ansible/inventory.ini
 
-[all:vars]
-ansible_ssh_private_key_file=../terraform/ssh-key/id_rsa
-EOF
+          echo "[all:vars]" >> ../ansible/inventory.ini
+          echo "ansible_ssh_private_key_file=../terraform/ssh-key/id_rsa" >> ../ansible/inventory.ini
 
-      - name: Install Ansible & Dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y ansible sshpass
+      - name: Install Ansible
+        run: sudo apt-get update && sudo apt-get install -y ansible
 
       - name: Run Ansible Playbook
         working-directory: ../ansible

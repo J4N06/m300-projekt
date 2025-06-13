@@ -1,26 +1,18 @@
+---
 - name: Vorbereitung auf allen Nodes (Common Setup)
   hosts: all
-  become: yes
-
+  become: true
   roles:
     - common
 
 - name: Kubernetes Master initialisieren
   hosts: master
-  become: yes
-
+  become: true
   roles:
     - master
 
 - name: Worker dem Cluster beitreten lassen
   hosts: worker
-  become: yes
-
+  become: true
   roles:
     - worker
-
-  name: Run Ansible Playbook
-  run: |
-    sudo apt-get update
-    sudo apt-get install -y ansible
-    ansible-playbook -i ansible/inventory.ini ansible/playbook.yml
