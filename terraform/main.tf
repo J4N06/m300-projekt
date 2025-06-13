@@ -1,13 +1,12 @@
 provider "aws" {
-  region = var.aws_region
+  region = "us-east-1"
 }
 
-# SSH Key (muss existieren)
+# SSH Key von GitHub Secret (per TF_VAR_... übergeben)
 resource "aws_key_pair" "k8s_key" {
-  key_name   = var.key_name
+  key_name   = "k8s-key"
   public_key = var.k8s_ssh_public_key
 }
-
 
 # VPC
 resource "aws_vpc" "main" {
@@ -24,11 +23,10 @@ resource "aws_vpc" "main" {
 resource "aws_subnet" "public" {
   vpc_id                  = aws_vpc.main.id
   cidr_block              = "10.0.1.0/24"
-  availability_zone       = var.availability_zone
   map_public_ip_on_launch = true
 
   tags = {
-    Name = "k8s-subnet"
+    Name = "k8s-public-subnet"
   }
 }
 
@@ -55,18 +53,20 @@ resource "aws_route_table" "public" {
   }
 }
 
+# Route Table Association
 resource "aws_route_table_association" "public" {
   subnet_id      = aws_subnet.public.id
   route_table_id = aws_route_table.public.id
 }
 
-# Security Group
+# Security Group (SSH only)
 resource "aws_security_group" "k8s_sg" {
   name        = "k8s-sg"
   description = "Allow SSH"
   vpc_id      = aws_vpc.main.id
 
   ingress {
+    description = "SSH"
     from_port   = 22
     to_port     = 22
     protocol    = "tcp"
@@ -81,14 +81,13 @@ resource "aws_security_group" "k8s_sg" {
   }
 
   tags = {
-    Name = "k8s-sg"
+    Name = "k8s-security-group"
   }
 }
 
-# Ubuntu AMI (aktuellste)
+# Ubuntu AMI (latest in us-east-1)
 data "aws_ami" "ubuntu" {
   most_recent = true
-  owners      = ["099720109477"]
 
   filter {
     name   = "name"
@@ -99,18 +98,23 @@ data "aws_ami" "ubuntu" {
     name   = "virtualization-type"
     values = ["hvm"]
   }
+
+  owners = ["099720109477"] # Canonical
+
 }
 
-# EC2-Instanz
-resource "aws_instance" "k8s_node" {
-  ami                         = data.aws_ami.ubuntu.id
-  instance_type               = var.instance_type
+# EC2 Instances (3x)
+resource "aws_instance" "k8s_nodes" {
+  count         = 3
+  ami           = data.aws_ami.ubuntu.id
+  instance_type = "t2.micro"
+  key_name      = aws_key_pair.k8s_key.key_name
+
   subnet_id                   = aws_subnet.public.id
-  key_name                    = aws_key_pair.k8s_key.key_name
   vpc_security_group_ids      = [aws_security_group.k8s_sg.id]
   associate_public_ip_address = true
 
   tags = {
-    Name = "k8s-node"
+    Name = "k8s-node-${count.index + 1}"
   }
 }
