@@ -4,13 +4,13 @@ on:
   push:
     branches:
       - main
-  workflow_dispatch:  
+  workflow_dispatch:
 
 jobs:
   terraform:
     name: Deploy Infrastructure
     runs-on: ubuntu-latest
-    
+
     env:
       TF_VAR_k8s_ssh_public_key: ${{ secrets.k8s_ssh_public_key }}
 
@@ -43,3 +43,37 @@ jobs:
 
       - name: Terraform Apply (Auto-Approve)
         run: terraform apply -auto-approve
+
+      - name: Get Public IPs from Terraform
+        id: get_ips
+        run: |
+          IPS=$(terraform output -json instance_public_ips | jq -r '.[]')
+          echo "$IPS" > ../ansible/ips.txt
+
+      - name: Create Ansible Inventory File
+        run: |
+          readarray -t IPS < ../ansible/ips.txt
+          MASTER=${IPS[0]}
+          WORKER1=${IPS[1]}
+          WORKER2=${IPS[2]}
+
+          cat <<EOF > ../ansible/inventory.ini
+[master]
+$MASTER ansible_user=ubuntu
+
+[worker]
+$WORKER1 ansible_user=ubuntu
+$WORKER2 ansible_user=ubuntu
+
+[all:vars]
+ansible_ssh_private_key_file=../terraform/ssh-key/id_rsa
+EOF
+
+      - name: Install Ansible & Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ansible sshpass
+
+      - name: Run Ansible Playbook
+        working-directory: ../ansible
+        run: ansible-playbook -i inventory.ini playbook.yml

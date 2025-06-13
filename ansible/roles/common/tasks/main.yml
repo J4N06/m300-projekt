@@ -1,0 +1,10 @@
+- name: Update APT & install dependencies
+  apt:
+    update_cache: yes
+    name:
+      - curl
+      - apt-transport-https
+      - ca-certificates
+      - gnupg
+      - software-properties-common
+    state: present
