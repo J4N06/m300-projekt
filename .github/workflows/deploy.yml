@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      TF_VAR_k8s_ssh_public_key: ${{ secrets.k8s_ssh_public_key }}
+      TF_VAR_k8s_ssh_public_key: ${{ secrets.K8S_SSH_PUBLIC_KEY }}
 
     defaults:
       run:
@@ -50,6 +50,12 @@ jobs:
           IPS=$(terraform output -json instance_public_ips | jq -r '.[]' | paste -sd "," -)
           echo "PUB_DNS=$IPS" >> $GITHUB_ENV
 
+      - name: Write Private SSH Key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.K8S_SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+
       - name: Create Ansible Inventory File
         run: |
           IFS=',' read -r MASTER WORKER1 WORKER2 <<< "$PUB_DNS"
@@ -63,18 +69,12 @@ jobs:
           echo "$WORKER2 ansible_user=ubuntu" >> ../ansible/inventory.ini
 
           echo "[all:vars]" >> ../ansible/inventory.ini
-          echo "ansible_ssh_private_key_file=../terraform/ssh-key/id_rsa" >> ../ansible/inventory.ini
+          echo "ansible_ssh_private_key_file=~/.ssh/id_rsa" >> ../ansible/inventory.ini
           echo "ansible_ssh_common_args='-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null'" >> ../ansible/inventory.ini
 
       - name: Install Ansible
         run: sudo apt-get update && sudo apt-get install -y ansible
 
-      - name: Write Private SSH Key
-        run: |
-          mkdir -p ~/.ssh
-          echo "${{ secrets.k8s_ssh_private_key }}" > ~/.ssh/id_rsa
-          chmod 600 ~/.ssh/id_rsa
-          
       - name: Run Ansible Playbook
         run: |
           cd ../ansible
