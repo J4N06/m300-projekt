@@ -38,6 +38,7 @@
     state: present
     update_cache: true
   become: true
+
 - name: Create default containerd config
   shell: |
     mkdir -p /etc/containerd
@@ -51,6 +52,13 @@
     path: /etc/containerd/config.toml
     regexp: '^(\s*)SystemdCgroup\s*=\s*false'
     replace: '\1SystemdCgroup = true'
+  become: true
+
+- name: Set pause image version to 3.9
+  lineinfile:
+    path: /etc/containerd/config.toml
+    regexp: 'sandbox_image = ".*"'
+    line: 'sandbox_image = "registry.k8s.io/pause:3.9"'
   become: true
 
 - name: Restart containerd
@@ -83,3 +91,13 @@
     rm -f crictl-${VERSION}-linux-amd64.tar.gz
   args:
     creates: /usr/local/bin/crictl
+
+- name: Set crictl config
+  copy:
+    dest: /etc/crictl.yaml
+    content: |
+      runtime-endpoint: unix:///var/run/containerd/containerd.sock
+      image-endpoint: unix:///var/run/containerd/containerd.sock
+      timeout: 10
+      debug: false
+  become: true
