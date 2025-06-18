@@ -1,14 +1,13 @@
-- name: Add Kubernetes GPG key (to keyring)
+- name: Add Kubernetes APT GPG key
   ansible.builtin.get_url:
     url: https://packages.cloud.google.com/apt/doc/apt-key.gpg
-    dest: /usr/share/keyrings/kubernetes-archive-keyring.gpg
+    dest: /etc/apt/trusted.gpg.d/kubernetes-apt-key.gpg
     mode: "0644"
   become: true
 
-- name: Add Kubernetes APT repository securely
+- name: Add Kubernetes APT repository
   ansible.builtin.apt_repository:
-    repo: "deb [signed-by=/usr/share/keyrings/kubernetes-archive-keyring.gpg] https://apt.kubernetes.io/ kubernetes main"
-    filename: kubernetes
+    repo: "deb https://apt.kubernetes.io/ kubernetes-xenial main"
     state: present
   become: true
 
