@@ -14,6 +14,27 @@
     apt-get install -y kubelet kubeadm kubectl
     kubeadm init --pod-network-cidr=10.244.0.0/16 | tee /root/kubeadm_output.txt
 
+- name: Debug kubeadm output
+  become: true
+  shell: cat /root/kubeadm_output.txt
+  register: kubeadm_debug
+  ignore_errors: true
+
+- name: Print kubeadm init result
+  debug:
+    var: kubeadm_debug.stdout
+
+- name: Fail if admin.conf is missing
+  become: true
+  stat:
+    path: /etc/kubernetes/admin.conf
+  register: admin_conf
+
+- name: Stop if kubeadm failed
+  fail:
+    msg: "kubeadm init scheint fehlgeschlagen zu sein: admin.conf fehlt!"
+  when: not admin_conf.stat.exists
+
 - name: Save kubeconfig for ubuntu user
   become: true
   shell: |
