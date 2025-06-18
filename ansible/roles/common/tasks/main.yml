@@ -40,3 +40,20 @@
       - ca-certificates
     state: present
     update_cache: true
+- name: Install Kubernetes required tools
+  apt:
+    name:
+      - socat
+      - conntrack
+    state: present
+    update_cache: true
+  become: true
+
+- name: Install crictl
+  shell: |
+    VERSION="v1.29.0"
+    curl -LO https://github.com/kubernetes-sigs/cri-tools/releases/download/${VERSION}/crictl-${VERSION}-linux-amd64.tar.gz
+    tar zxvf crictl-${VERSION}-linux-amd64.tar.gz -C /usr/local/bin
+    rm -f crictl-${VERSION}-linux-amd64.tar.gz
+  args:
+    creates: /usr/local/bin/crictl
