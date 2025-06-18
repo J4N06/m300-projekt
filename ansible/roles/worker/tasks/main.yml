@@ -1,16 +1,27 @@
-- name: Copy join script from master
-  fetch:
-    src: /home/ubuntu/join-command.sh
-    dest: /tmp/join-command.sh
-    flat: yes
-  delegate_to: "{{ groups['master'][0] }}"
-  run_once: true
+- name: Kubernetes-Komponenten manuell installieren (Worker)
+  shell: |
+    cd /tmp
+    curl -LO https://dl.k8s.io/release/v1.29.2/bin/linux/amd64/kubeadm
+    curl -LO https://dl.k8s.io/release/v1.29.2/bin/linux/amd64/kubelet
+    curl -LO https://dl.k8s.io/release/v1.29.2/bin/linux/amd64/kubectl
 
-- name: Copy join script to worker
-  copy:
-    src: /tmp/join-command.sh
-    dest: /home/ubuntu/join-command.sh
-    mode: "0755"
+    install -o root -g root -m 0755 kubeadm /usr/local/bin/kubeadm
+    install -o root -g root -m 0755 kubelet /usr/local/bin/kubelet
+    install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
 
-- name: Execute join command
+    curl -sS https://raw.githubusercontent.com/kubernetes/release/v0.15.1/cmd/kubepkg/templates/latest/deb/kubelet/lib/systemd/system/kubelet.service -o /etc/systemd/system/kubelet.service
+    mkdir -p /etc/systemd/system/kubelet.service.d
+    curl -sS https://raw.githubusercontent.com/kubernetes/release/v0.15.1/cmd/kubepkg/templates/latest/deb/kubeadm/10-kubeadm.conf -o /etc/systemd/system/kubelet.service.d/10-kubeadm.conf
+
+    systemctl daemon-reexec
+    systemctl daemon-reload
+    systemctl enable kubelet
+    systemctl restart kubelet
+
+- name: Warten auf Join-Skript vom Master
+  wait_for:
+    path: /home/ubuntu/join-command.sh
+    timeout: 600
+
+- name: Worker Node dem Cluster beitreten lassen
   command: bash /home/ubuntu/join-command.sh

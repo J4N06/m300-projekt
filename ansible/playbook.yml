@@ -1,17 +1,17 @@
 - name: Vorbereitung auf allen Nodes (Common Setup)
-  become: true
   hosts: all
+  become: true
   roles:
     - common
 
 - name: Kubernetes Master initialisieren
-  become: true
   hosts: master
+  become: true
   roles:
     - master
 
-- name: Worker dem Cluster beitreten lassen
-  become: true
+- name: Worker Nodes beitreten lassen
   hosts: worker
+  become: true
   roles:
     - worker

@@ -1,47 +1,47 @@
-- name: Add Kubernetes APT GPG key
-  ansible.builtin.get_url:
-    url: https://packages.cloud.google.com/apt/doc/apt-key.gpg
-    dest: /etc/apt/trusted.gpg.d/kubernetes-apt-key.gpg
-    mode: "0644"
-  become: true
+- name: Kubernetes-Komponenten manuell installieren
+  shell: |
+    cd /tmp
+    curl -LO https://dl.k8s.io/release/v1.29.2/bin/linux/amd64/kubeadm
+    curl -LO https://dl.k8s.io/release/v1.29.2/bin/linux/amd64/kubelet
+    curl -LO https://dl.k8s.io/release/v1.29.2/bin/linux/amd64/kubectl
 
-- name: Add Kubernetes APT repository
-  ansible.builtin.apt_repository:
-    repo: "deb https://apt.kubernetes.io/ kubernetes-xenial main"
-    state: present
-  become: true
+    install -o root -g root -m 0755 kubeadm /usr/local/bin/kubeadm
+    install -o root -g root -m 0755 kubelet /usr/local/bin/kubelet
+    install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
 
-- name: Update APT cache
-  ansible.builtin.apt:
-    update_cache: true
-  become: true
+    curl -sS https://raw.githubusercontent.com/kubernetes/release/v0.15.1/cmd/kubepkg/templates/latest/deb/kubelet/lib/systemd/system/kubelet.service -o /etc/systemd/system/kubelet.service
+    mkdir -p /etc/systemd/system/kubelet.service.d
+    curl -sS https://raw.githubusercontent.com/kubernetes/release/v0.15.1/cmd/kubepkg/templates/latest/deb/kubeadm/10-kubeadm.conf -o /etc/systemd/system/kubelet.service.d/10-kubeadm.conf
 
-- name: Install Kubernetes components
-  ansible.builtin.apt:
-    name:
-      - containerd
-      - kubelet
-      - kubeadm
-      - kubectl
-    state: present
-    update_cache: yes
+    systemctl daemon-reexec
+    systemctl daemon-reload
+    systemctl enable kubelet
+    systemctl restart kubelet
 
-- name: Initialize Kubernetes master
+- name: Kubernetes-Cluster initialisieren
   command: kubeadm init --pod-network-cidr=10.244.0.0/16
   register: kubeadm_output
   args:
     creates: /etc/kubernetes/admin.conf
 
-- name: Copy admin.conf to ubuntu user
+- name: Kubeconfig für ubuntu konfigurieren
+  file:
+    path: /home/ubuntu/.kube
+    state: directory
+    owner: ubuntu
+    group: ubuntu
+    mode: "0755"
+
+- name: kubeconfig kopieren
   copy:
     src: /etc/kubernetes/admin.conf
     dest: /home/ubuntu/.kube/config
-    remote_src: yes
+    remote_src: true
     owner: ubuntu
     group: ubuntu
-    mode: 0600
+    mode: "0600"
 
-- name: Extract join command
+- name: Join-Befehl speichern
   shell: |
     echo "{{ kubeadm_output.stdout_lines | join('\n') }}" | grep -A 2 'kubeadm join' > /home/ubuntu/join-command.sh
     chmod +x /home/ubuntu/join-command.sh
