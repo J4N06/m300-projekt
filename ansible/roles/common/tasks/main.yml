@@ -33,24 +33,26 @@
 - name: Sysctl anwenden
   command: sysctl --system
 
-- name: Install containerd
-  apt:
-    name: containerd
-    state: present
-    update_cache: yes
-  become: true
-
 - name: Create default containerd config
-  command: containerd config default > /etc/containerd/config.toml
+  shell: |
+    mkdir -p /etc/containerd
+    containerd config default > /etc/containerd/config.toml
   args:
     creates: /etc/containerd/config.toml
   become: true
 
-- name: Enable and start containerd
+- name: Set SystemdCgroup = true
+  replace:
+    path: /etc/containerd/config.toml
+    regexp: '^(\s*)SystemdCgroup\s*=\s*false'
+    replace: '\1SystemdCgroup = true'
+  become: true
+
+- name: Restart containerd
   systemd:
     name: containerd
     enabled: true
-    state: started
+    state: restarted
   become: true
 - name: Notwendige Pakete installieren
   apt:
