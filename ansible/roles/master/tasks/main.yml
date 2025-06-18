@@ -1,23 +1,21 @@
 - name: Install containerd & kubeadm
-  become: true
   shell: |
+    export DEBIAN_FRONTEND=noninteractive
     apt-get update
     apt-get install -y containerd
-
     modprobe overlay
     modprobe br_netfilter
-
     echo -e "overlay\nbr_netfilter" > /etc/modules-load.d/k8s.conf
     echo -e "net.bridge.bridge-nf-call-iptables=1\nnet.ipv4.ip_forward=1" > /etc/sysctl.d/k8s.conf
     sysctl --system
-
     swapoff -a
     sed -i.bak '/ swap / s/^/#/' /etc/fstab
-
     curl -fsSL https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add -
     echo "deb http://apt.kubernetes.io/ kubernetes-xenial main" > /etc/apt/sources.list.d/kubernetes.list
     apt-get update
     apt-get install -y kubelet kubeadm kubectl
+  args:
+    warn: false
 
 - name: Init Kubernetes master
   become: true
