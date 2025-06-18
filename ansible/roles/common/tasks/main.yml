@@ -32,7 +32,12 @@
 
 - name: Sysctl anwenden
   command: sysctl --system
-
+- name: Install containerd
+  apt:
+    name: containerd
+    state: present
+    update_cache: true
+  become: true
 - name: Create default containerd config
   shell: |
     mkdir -p /etc/containerd
