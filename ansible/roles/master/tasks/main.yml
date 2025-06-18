@@ -1,4 +1,5 @@
 - name: Install containerd & kubeadm
+  become: true
   shell: |
     apt-get update
     apt-get install -y containerd
@@ -14,12 +15,18 @@
     kubeadm init --pod-network-cidr=10.244.0.0/16 | tee /root/kubeadm_output.txt
 
 - name: Save kubeconfig for ubuntu user
+  become: true
   shell: |
     mkdir -p /home/ubuntu/.kube
     cp -i /etc/kubernetes/admin.conf /home/ubuntu/.kube/config
     chown ubuntu:ubuntu /home/ubuntu/.kube/config
+  args:
+    executable: /bin/bash
 
 - name: Export join command
+  become: true
   shell: |
     grep -A 2 "kubeadm join" /root/kubeadm_output.txt > /home/ubuntu/join-command.sh
     chmod +x /home/ubuntu/join-command.sh
+  args:
+    executable: /bin/bash
