@@ -4,9 +4,9 @@
     dest: /usr/share/keyrings/kubernetes-archive-keyring.gpg
     mode: "0644"
 
-- name: Add Kubernetes repository
+- name: Add Kubernetes APT repository
   apt_repository:
-    repo: "deb [signed-by=/usr/share/keyrings/kubernetes-archive-keyring.gpg] https://apt.kubernetes.io/ kubernetes-stable main"
+    repo: "deb [signed-by=/usr/share/keyrings/kubernetes-archive-keyring.gpg] https://apt.kubernetes.io/ kubernetes-xenial main"
     filename: kubernetes
     state: present
 
