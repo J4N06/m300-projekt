@@ -1,3 +1,10 @@
+- name: Kubelet Pfad fixen wenn nicht vorhanden
+  file:
+    src: /usr/local/bin/kubelet
+    dest: /usr/bin/kubelet
+    state: link
+  become: true
+
 - name: Deaktiviere Swap sofort
   command: swapoff -a
 
@@ -89,8 +96,6 @@
     install -o root -g root -m 0755 kubeadm /usr/local/bin/kubeadm
     install -o root -g root -m 0755 kubelet /usr/local/bin/kubelet
     install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
-  args:
-    creates: /usr/local/bin/kubectl
 
 - name: kubelet systemd service einrichten
   shell: |
@@ -127,9 +132,12 @@
   register: containerd_status
   failed_when: containerd_status.stdout != "active"
 
-- name: Prüfe ob kubelet aktiv ist
+- name: Warte bis kubelet aktiv ist
   command: systemctl is-active kubelet
   register: kubelet_status
+  until: kubelet_status.stdout == "active"
+  retries: 5
+  delay: 5
   failed_when: kubelet_status.stdout != "active"
 
 - name: Kubernetes-Cluster initialisieren
