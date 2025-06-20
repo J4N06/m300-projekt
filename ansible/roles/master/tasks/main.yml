@@ -128,7 +128,7 @@
 - name: Prüfe ob kubelet aktiv ist
   command: systemctl is-active kubelet
   register: kubelet_status
-  failed_when: kubelet_status.stdout != "active"
+  failed_when: kubelet_status.stdout not in ["active", "activating"]
 
 - name: Kubernetes-Cluster initialisieren
   command: kubeadm init --pod-network-cidr=10.244.0.0/16
