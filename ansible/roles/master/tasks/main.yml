@@ -1,3 +1,10 @@
+- name: Kubelet Pfad fixen wenn nicht vorhanden
+  file:
+    src: /usr/local/bin/kubelet
+    dest: /usr/bin/kubelet
+    state: link
+  become: true
+
 - name: Deaktiviere Swap sofort
   command: swapoff -a
 
@@ -128,7 +135,7 @@
 - name: Prüfe ob kubelet aktiv ist
   command: systemctl is-active kubelet
   register: kubelet_status
-  failed_when: kubelet_status.stdout not in ["active", "activating"]
+  failed_when: kubelet_status.stdout != "active"
 
 - name: Kubernetes-Cluster initialisieren
   command: kubeadm init --pod-network-cidr=10.244.0.0/16
@@ -136,7 +143,7 @@
   ignore_errors: true
 
 - name: Kubelet-Logs anzeigen bei Fehler
-  command: journalctl -xeu kubelet --no-pager | tail -n 50
+  shell: journalctl -xeu kubelet --no-pager | tail -n 50
   when: kubeadm_output.rc != 0
   register: kubelet_logs
   ignore_errors: true
