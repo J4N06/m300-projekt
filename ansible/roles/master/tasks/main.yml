@@ -177,6 +177,14 @@
     chmod +x /home/ubuntu/join-command.sh
   when: kubeadm_output.rc == 0
 
+- name: Erstelle .kube Verzeichnis für Ubuntu User
+  file:
+    path: /home/ubuntu/.kube
+    state: directory
+    owner: ubuntu
+    group: ubuntu
+    mode: "0755"
+
 - name: Admin-Konfiguration nach /home/ubuntu kopieren
   copy:
     src: /etc/kubernetes/admin.conf
