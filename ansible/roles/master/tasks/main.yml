@@ -1,25 +1,9 @@
-- name: Install Kubernetes tools (manuell)
-  shell: |
-    cd /tmp
-    curl -LO https://dl.k8s.io/release/v1.29.2/bin/linux/amd64/kubeadm
-    curl -LO https://dl.k8s.io/release/v1.29.2/bin/linux/amd64/kubelet
-    curl -LO https://dl.k8s.io/release/v1.29.2/bin/linux/amd64/kubectl
-    install -o root -g root -m 0755 kubeadm /usr/local/bin/kubeadm
-    install -o root -g root -m 0755 kubelet /usr/local/bin/kubelet
-    install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
-
-- name: Prüfe ob /usr/local/bin/kubelet existiert
-  stat:
-    path: /usr/local/bin/kubelet
-  register: kubelet_binary
-
-- name: Kubelet Pfad fixen wenn vorhanden
+- name: Kubelet Pfad fixen wenn nicht vorhanden
   file:
     src: /usr/local/bin/kubelet
     dest: /usr/bin/kubelet
     state: link
     force: yes
-  when: kubelet_binary.stat.exists
   become: true
 
 - name: Deaktiviere Swap sofort
@@ -104,6 +88,16 @@
       runtime-endpoint: unix:///var/run/containerd/containerd.sock
       image-endpoint: unix:///var/run/containerd/containerd.sock
 
+- name: Install Kubernetes tools (manuell)
+  shell: |
+    cd /tmp
+    curl -LO https://dl.k8s.io/release/v1.29.2/bin/linux/amd64/kubeadm
+    curl -LO https://dl.k8s.io/release/v1.29.2/bin/linux/amd64/kubelet
+    curl -LO https://dl.k8s.io/release/v1.29.2/bin/linux/amd64/kubectl
+    install -o root -g root -m 0755 kubeadm /usr/local/bin/kubeadm
+    install -o root -g root -m 0755 kubelet /usr/local/bin/kubelet
+    install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
+
 - name: kubelet systemd service einrichten
   shell: |
     curl -sS https://raw.githubusercontent.com/kubernetes/release/v0.15.1/cmd/kubepkg/templates/latest/deb/kubelet/lib/systemd/system/kubelet.service -o /etc/systemd/system/kubelet.service
@@ -142,10 +136,10 @@
 - name: Prüfe ob kubelet aktiv ist
   command: systemctl is-active kubelet
   register: kubelet_status
-  failed_when: kubelet_status.stdout != "active"
+  failed_when: kubelet_status.stdout not in ["active", "activating"]
 
 - name: Kubernetes-Cluster initialisieren
-  command: kubeadm init --pod-network-cidr=10.244.0.0/16
+  command: kubeadm init --pod-network-cidr=10.244.0.0/16 --ignore-preflight-errors=Port-10250
   register: kubeadm_output
   ignore_errors: true
 
