@@ -1,4 +1,3 @@
----
 - name: Deaktiviere Swap sofort
   command: swapoff -a
 
@@ -103,17 +102,48 @@
     regexp: "^KUBELET_KUBEADM_ARGS="
     line: "KUBELET_KUBEADM_ARGS=--cgroup-driver=systemd"
 
-- name: Reload systemd daemon and restart kubelet
-  systemd:
-    name: kubelet
-    daemon_reload: yes
-    enabled: yes
-    state: restarted
+- name: Reload systemd daemon and restart containerd and kubelet
+  block:
+    - name: Reload systemd daemon
+      command: systemctl daemon-reexec
+
+    - name: Restart containerd
+      systemd:
+        name: containerd
+        enabled: true
+        state: restarted
+
+    - name: Restart kubelet
+      systemd:
+        name: kubelet
+        enabled: true
+        state: restarted
+        daemon_reload: true
+
+- name: Prüfe ob containerd aktiv ist
+  command: systemctl is-active containerd
+  register: containerd_status
+  failed_when: containerd_status.stdout != "active"
+
+- name: Prüfe ob kubelet aktiv ist
+  command: systemctl is-active kubelet
+  register: kubelet_status
+  failed_when: kubelet_status.stdout != "active"
 
 - name: Kubernetes-Cluster initialisieren
   command: kubeadm init --pod-network-cidr=10.244.0.0/16
   register: kubeadm_output
   ignore_errors: true
+
+- name: Kubelet-Logs anzeigen bei Fehler
+  command: journalctl -xeu kubelet --no-pager | tail -n 50
+  when: kubeadm_output.rc != 0
+  register: kubelet_logs
+  ignore_errors: true
+
+- debug:
+    var: kubelet_logs.stdout_lines
+  when: kubeadm_output.rc != 0
 
 - name: Join-Befehl extrahieren
   shell: |
