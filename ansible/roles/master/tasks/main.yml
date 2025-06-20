@@ -1,10 +1,3 @@
-- name: Kubelet Pfad fixen wenn nicht vorhanden
-  file:
-    src: /usr/local/bin/kubelet
-    dest: /usr/bin/kubelet
-    state: link
-  become: true
-
 - name: Deaktiviere Swap sofort
   command: swapoff -a
 
@@ -96,6 +89,8 @@
     install -o root -g root -m 0755 kubeadm /usr/local/bin/kubeadm
     install -o root -g root -m 0755 kubelet /usr/local/bin/kubelet
     install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
+  args:
+    creates: /usr/local/bin/kubectl
 
 - name: kubelet systemd service einrichten
   shell: |
