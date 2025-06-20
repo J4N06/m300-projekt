@@ -1,3 +1,4 @@
+---
 - name: Deaktiviere Swap sofort
   command: swapoff -a
 
@@ -95,10 +96,19 @@
     curl -sS https://raw.githubusercontent.com/kubernetes/release/v0.15.1/cmd/kubepkg/templates/latest/deb/kubelet/lib/systemd/system/kubelet.service -o /etc/systemd/system/kubelet.service
     mkdir -p /etc/systemd/system/kubelet.service.d
     curl -sS https://raw.githubusercontent.com/kubernetes/release/v0.15.1/cmd/kubepkg/templates/latest/deb/kubeadm/10-kubeadm.conf -o /etc/systemd/system/kubelet.service.d/10-kubeadm.conf
-    systemctl daemon-reexec
-    systemctl daemon-reload
-    systemctl enable kubelet
-    systemctl restart kubelet
+
+- name: Set systemd cgroup driver for kubelet
+  lineinfile:
+    path: /etc/systemd/system/kubelet.service.d/10-kubeadm.conf
+    regexp: "^KUBELET_KUBEADM_ARGS="
+    line: "KUBELET_KUBEADM_ARGS=--cgroup-driver=systemd"
+
+- name: Reload systemd daemon and restart kubelet
+  systemd:
+    name: kubelet
+    daemon_reload: yes
+    enabled: yes
+    state: restarted
 
 - name: Kubernetes-Cluster initialisieren
   command: kubeadm init --pod-network-cidr=10.244.0.0/16
