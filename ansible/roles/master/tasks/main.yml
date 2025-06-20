@@ -1,8 +1,25 @@
-- name: Kubelet Pfad fixen wenn nicht vorhanden
+- name: Install Kubernetes tools (manuell)
+  shell: |
+    cd /tmp
+    curl -LO https://dl.k8s.io/release/v1.29.2/bin/linux/amd64/kubeadm
+    curl -LO https://dl.k8s.io/release/v1.29.2/bin/linux/amd64/kubelet
+    curl -LO https://dl.k8s.io/release/v1.29.2/bin/linux/amd64/kubectl
+    install -o root -g root -m 0755 kubeadm /usr/local/bin/kubeadm
+    install -o root -g root -m 0755 kubelet /usr/local/bin/kubelet
+    install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
+
+- name: Prüfe ob /usr/local/bin/kubelet existiert
+  stat:
+    path: /usr/local/bin/kubelet
+  register: kubelet_binary
+
+- name: Kubelet Pfad fixen wenn vorhanden
   file:
     src: /usr/local/bin/kubelet
     dest: /usr/bin/kubelet
     state: link
+    force: yes
+  when: kubelet_binary.stat.exists
   become: true
 
 - name: Deaktiviere Swap sofort
@@ -87,16 +104,6 @@
       runtime-endpoint: unix:///var/run/containerd/containerd.sock
       image-endpoint: unix:///var/run/containerd/containerd.sock
 
-- name: Install Kubernetes tools (manuell)
-  shell: |
-    cd /tmp
-    curl -LO https://dl.k8s.io/release/v1.29.2/bin/linux/amd64/kubeadm
-    curl -LO https://dl.k8s.io/release/v1.29.2/bin/linux/amd64/kubelet
-    curl -LO https://dl.k8s.io/release/v1.29.2/bin/linux/amd64/kubectl
-    install -o root -g root -m 0755 kubeadm /usr/local/bin/kubeadm
-    install -o root -g root -m 0755 kubelet /usr/local/bin/kubelet
-    install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
-
 - name: kubelet systemd service einrichten
   shell: |
     curl -sS https://raw.githubusercontent.com/kubernetes/release/v0.15.1/cmd/kubepkg/templates/latest/deb/kubelet/lib/systemd/system/kubelet.service -o /etc/systemd/system/kubelet.service
@@ -132,12 +139,9 @@
   register: containerd_status
   failed_when: containerd_status.stdout != "active"
 
-- name: Warte bis kubelet aktiv ist
+- name: Prüfe ob kubelet aktiv ist
   command: systemctl is-active kubelet
   register: kubelet_status
-  until: kubelet_status.stdout == "active"
-  retries: 5
-  delay: 5
   failed_when: kubelet_status.stdout != "active"
 
 - name: Kubernetes-Cluster initialisieren
