@@ -1,9 +1,15 @@
-- name: Kubelet Pfad fixen wenn nicht vorhanden
+- name: Stelle sicher, dass kubelet vorhanden ist
+  stat:
+    path: /usr/local/bin/kubelet
+  register: kubelet_bin
+
+- name: Kubelet Pfad fixen wenn vorhanden
   file:
     src: /usr/local/bin/kubelet
     dest: /usr/bin/kubelet
     state: link
     force: yes
+  when: kubelet_bin.stat.exists
   become: true
 
 - name: Deaktiviere Swap sofort
