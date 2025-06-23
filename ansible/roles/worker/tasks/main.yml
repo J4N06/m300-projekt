@@ -1,3 +1,26 @@
+- name: SSH Public Key vom Master kopieren
+  copy:
+    src: /home/ubuntu/.ssh/id_rsa.pub
+    dest: /home/ubuntu/.ssh/authorized_keys
+    owner: ubuntu
+    group: ubuntu
+    mode: "0600"
+  delegate_to: localhost
+
+- name: Stelle sicher, dass kubelet vorhanden ist
+  stat:
+    path: /usr/local/bin/kubelet
+  register: kubelet_bin
+
+- name: Kubelet Pfad fixen wenn vorhanden
+  file:
+    src: /usr/local/bin/kubelet
+    dest: /usr/bin/kubelet
+    state: link
+    force: yes
+  when: kubelet_bin.stat.exists
+  become: true
+
 - name: Kubernetes-Komponenten manuell installieren (Worker)
   shell: |
     cd /tmp

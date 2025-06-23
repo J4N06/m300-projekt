@@ -29,61 +29,56 @@
       net.bridge.bridge-nf-call-iptables  = 1
       net.bridge.bridge-nf-call-ip6tables = 1
       net.ipv4.ip_forward                 = 1
+  notify: Reload sysctl
 
-- name: Sysctl anwenden
-  command: sysctl --system
-- name: Install containerd
+- name: Installiere containerd
   apt:
     name: containerd
     state: present
     update_cache: true
-  become: true
 
-- name: Create default containerd config
+- name: Erzeuge containerd-Konfiguration falls nicht vorhanden
   shell: |
     mkdir -p /etc/containerd
     containerd config default > /etc/containerd/config.toml
   args:
     creates: /etc/containerd/config.toml
-  become: true
 
-- name: Set SystemdCgroup = true
+- name: Setze SystemdCgroup = true
   replace:
     path: /etc/containerd/config.toml
-    regexp: '^(\s*)SystemdCgroup\s*=\s*false'
-    replace: '\1SystemdCgroup = true'
-  become: true
+    regexp: '^\s*SystemdCgroup\s*=\s*false'
+    replace: "SystemdCgroup = true"
 
-- name: Set pause image version to 3.9
+- name: Setze Pause-Image-Version auf 3.9
   lineinfile:
     path: /etc/containerd/config.toml
     regexp: 'sandbox_image = ".*"'
     line: 'sandbox_image = "registry.k8s.io/pause:3.9"'
-  become: true
 
-- name: Restart containerd
+- name: Starte containerd neu
   systemd:
     name: containerd
     enabled: true
     state: restarted
-  become: true
-- name: Notwendige Pakete installieren
+
+- name: Installiere curl und Zertifikate
   apt:
     name:
       - curl
       - ca-certificates
     state: present
     update_cache: true
-- name: Install Kubernetes required tools
+
+- name: Installiere Kubernetes erforderliche Tools
   apt:
     name:
       - socat
       - conntrack
     state: present
     update_cache: true
-  become: true
 
-- name: Install crictl
+- name: Installiere crictl falls nicht vorhanden
   shell: |
     VERSION="v1.29.0"
     curl -LO https://github.com/kubernetes-sigs/cri-tools/releases/download/${VERSION}/crictl-${VERSION}-linux-amd64.tar.gz
@@ -92,7 +87,7 @@
   args:
     creates: /usr/local/bin/crictl
 
-- name: Set crictl config
+- name: Setze crictl Konfiguration
   copy:
     dest: /etc/crictl.yaml
     content: |
@@ -100,4 +95,7 @@
       image-endpoint: unix:///var/run/containerd/containerd.sock
       timeout: 10
       debug: false
-  become: true
+
+  handlers:
+    - name: Reload sysctl
+      command: sysctl --system

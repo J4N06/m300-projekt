@@ -103,18 +103,6 @@
     install -o root -g root -m 0755 kubeadm /usr/local/bin/kubeadm
     install -o root -g root -m 0755 kubelet /usr/local/bin/kubelet
     install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
-- name: Prüfe ob /usr/local/bin/kubelet existiert
-  stat:
-    path: /usr/local/bin/kubelet
-  register: kubelet_bin
-
-- name: Erstelle Symlink für kubelet falls vorhanden
-  file:
-    src: /usr/local/bin/kubelet
-    dest: /usr/bin/kubelet
-    state: link
-    force: yes
-  when: kubelet_bin.stat.exists
 
 - name: kubelet systemd service einrichten
   shell: |
@@ -194,3 +182,10 @@
     group: ubuntu
     mode: 0600
   when: kubeadm_output.rc == 0
+
+- name: Kopiere SSH-Key zu den Worker Nodes
+  shell: |
+    cat /home/ubuntu/.ssh/id_rsa.pub >> /home/ubuntu/.ssh/authorized_keys
+  args:
+    executable: /bin/bash
+  become: true
