@@ -1,8 +1,3 @@
-- name: Prüfe ob /usr/local/bin/kubelet existiert
-  stat:
-    path: /usr/local/bin/kubelet
-  register: kubelet_bin
-
 - name: Erstelle Symlink für kubelet falls vorhanden
   file:
     src: /usr/local/bin/kubelet
@@ -10,7 +5,27 @@
     state: link
     force: yes
   when: kubelet_bin.stat.exists
-  become: true
+
+- name: Lade systemd neu und starte kubelet erneut
+  block:
+    - name: Lade systemd daemon neu
+      command: systemctl daemon-reexec
+
+    - name: Systemd neu laden
+      command: systemctl daemon-reload
+
+    - name: Starte kubelet neu
+      systemd:
+        name: kubelet
+        enabled: true
+        state: restarted
+- name: Zeige tatsächlichen Pfad von kubelet
+  command: which kubelet
+  register: kubelet_path
+  ignore_errors: true
+
+- debug:
+    var: kubelet_path.stdout
 
 - name: Deaktiviere Swap sofort
   command: swapoff -a
