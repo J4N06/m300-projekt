@@ -1,7 +1,19 @@
+- name: Install Kubernetes tools (manuell)
+  shell: |
+    cd /tmp
+    curl -LO https://dl.k8s.io/release/v1.29.2/bin/linux/amd64/kubeadm
+    curl -LO https://dl.k8s.io/release/v1.29.2/bin/linux/amd64/kubelet
+    curl -LO https://dl.k8s.io/release/v1.29.2/bin/linux/amd64/kubectl
+    install -o root -g root -m 0755 kubeadm /usr/local/bin/kubeadm
+    install -o root -g root -m 0755 kubelet /usr/local/bin/kubelet
+    install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
+  become: true
+
 - name: Prüfe ob /usr/local/bin/kubelet existiert
   stat:
     path: /usr/local/bin/kubelet
   register: kubelet_bin
+  become: true
 
 - name: Erstelle Symlink für kubelet falls vorhanden
   file:
@@ -10,21 +22,36 @@
     state: link
     force: yes
   when: kubelet_bin.stat.exists
+  become: true
+
+- name: kubelet systemd service einrichten
+  shell: |
+    curl -sS https://raw.githubusercontent.com/kubernetes/release/v0.15.1/cmd/kubepkg/templates/latest/deb/kubelet/lib/systemd/system/kubelet.service -o /etc/systemd/system/kubelet.service
+    mkdir -p /etc/systemd/system/kubelet.service.d
+    curl -sS https://raw.githubusercontent.com/kubernetes/release/v0.15.1/cmd/kubepkg/templates/latest/deb/kubeadm/10-kubeadm.conf -o /etc/systemd/system/kubelet.service.d/10-kubeadm.conf
+  become: true
+
+- name: Set systemd cgroup driver for kubelet
+  lineinfile:
+    path: /etc/systemd/system/kubelet.service.d/10-kubeadm.conf
+    regexp: "^KUBELET_KUBEADM_ARGS="
+    line: "KUBELET_KUBEADM_ARGS=--cgroup-driver=systemd"
+  become: true
 
 - name: Lade systemd daemon neu
   command: systemctl daemon-reexec
+  become: true
 
 - name: Systemd neu laden
   command: systemctl daemon-reload
+  become: true
 
 - name: Starte kubelet neu
   systemd:
     name: kubelet
     enabled: true
     state: restarted
-
-- debug:
-    var: kubelet_path.stdout
+  become: true
 
 - name: Deaktiviere Swap sofort
   command: swapoff -a
