@@ -89,6 +89,11 @@ jobs:
           echo "[all:vars]" >> ../ansible/inventory.ini
           echo "ansible_ssh_private_key_file=~/.ssh/id_rsa" >> ../ansible/inventory.ini
           echo "ansible_ssh_common_args='-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null'" >> ../ansible/inventory.ini
+      - name: Setze MASTER_IP für späteren Zugriff
+        run: |
+          IFS=',' read -r MASTER WORKER1 WORKER2 <<< "$PUB_DNS"
+          echo "MASTER_IP=$MASTER" >> $GITHUB_ENV
+
 
       - name: Install Ansible
         run: sudo apt-get update && sudo apt-get install -y ansible
