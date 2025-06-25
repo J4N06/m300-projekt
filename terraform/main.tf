@@ -62,13 +62,45 @@ resource "aws_route_table_association" "public" {
 # Security Group (SSH only)
 resource "aws_security_group" "k8s_sg" {
   name        = "k8s-sg"
-  description = "Allow SSH"
+  description = "Allow Kubernetes traffic"
   vpc_id      = aws_vpc.main.id
 
   ingress {
     description = "SSH"
     from_port   = 22
     to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    description = "Kubernetes API Server"
+    from_port   = 6443
+    to_port     = 6443
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    description = "etcd Server Client API"
+    from_port   = 2379
+    to_port     = 2380
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    description = "Kubelet API"
+    from_port   = 10250
+    to_port     = 10252
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    description = "NodePort Services"
+    from_port   = 30000
+    to_port     = 32767
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
@@ -84,6 +116,7 @@ resource "aws_security_group" "k8s_sg" {
     Name = "k8s-security-group"
   }
 }
+
 
 # Ubuntu AMI (latest in us-east-1)
 data "aws_ami" "ubuntu" {
