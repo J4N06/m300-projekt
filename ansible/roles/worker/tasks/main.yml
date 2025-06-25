@@ -19,6 +19,20 @@
   args:
     creates: /usr/local/bin/kubeadm
 
+- name: Symlink für kubelet auf Worker erstellen
+  file:
+    src: /usr/local/bin/kubelet
+    dest: /usr/bin/kubelet
+    state: link
+    force: true
+
+- name: Systemd reload + kubelet neustarten
+  systemd:
+    name: kubelet
+    enabled: true
+    state: restarted
+    daemon_reload: true
+
 - name: Join-Skript vom Ansible Host auf Worker kopieren
   copy:
     src: /tmp/join-command.sh
