@@ -12,6 +12,13 @@
   args:
     creates: /usr/local/bin/kubeadm
 
+- name: Symlink für kubelet erstellen
+  file:
+    src: /usr/local/bin/kubelet
+    dest: /usr/bin/kubelet
+    state: link
+    force: true
+
 - name: Kubelet systemd konfigurieren
   shell: |
     curl -sS https://raw.githubusercontent.com/kubernetes/release/v0.15.1/cmd/kubepkg/templates/latest/deb/kubelet/lib/systemd/system/kubelet.service -o /etc/systemd/system/kubelet.service
@@ -53,6 +60,13 @@
   shell: |
     echo "{{ kubeadm_output.stdout_lines | join('\n') }}" | grep -A 2 'kubeadm join' > /home/ubuntu/join-command.sh
     chmod +x /home/ubuntu/join-command.sh
+  when: kubeadm_output.rc == 0
+
+- name: Join-Skript auf Ansible Host holen
+  fetch:
+    src: /home/ubuntu/join-command.sh
+    dest: /tmp/join-command.sh
+    flat: yes
   when: kubeadm_output.rc == 0
 
 - name: Kubeconfig für ubuntu User erstellen

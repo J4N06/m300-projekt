@@ -18,6 +18,19 @@
     systemctl restart kubelet
   args:
     creates: /usr/local/bin/kubeadm
+- name: Join-Skript vom Master holen
+  fetch:
+    src: /home/ubuntu/join-command.sh
+    dest: /tmp/
+    flat: yes
+  delegate_to: "{{ groups['master'][0] }}"
+
+- name: Join-Skript auf Worker kopieren
+  copy:
+    src: /tmp/join-command.sh
+    dest: /home/ubuntu/join-command.sh
+    mode: 0755
+
 
 - name: Warten auf Join-Skript vom Master
   wait_for:
