@@ -89,11 +89,11 @@ jobs:
           echo "[all:vars]" >> ../ansible/inventory.ini
           echo "ansible_ssh_private_key_file=~/.ssh/id_rsa" >> ../ansible/inventory.ini
           echo "ansible_ssh_common_args='-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null'" >> ../ansible/inventory.ini
-      - name: Setze MASTER_IP für späteren Zugriff
+            - name: Setze MASTER_IP für späteren Zugriff
+        id: extract_master_ip
         run: |
           IFS=',' read -r MASTER WORKER1 WORKER2 <<< "$PUB_DNS"
           echo "MASTER_IP=$MASTER" >> $GITHUB_ENV
-
 
       - name: Install Ansible
         run: sudo apt-get update && sudo apt-get install -y ansible
@@ -102,8 +102,19 @@ jobs:
         run: |
           cd ../ansible
           ansible-playbook -i inventory.ini playbook.yml
-      - name: Fetch kubeconfig from Master
+
+      - name: Debug: Zeige MASTER_IP
+        run: echo "Master-IP: $MASTER_IP"
+
+      - name: Fetch kubeconfig vom Master
         run: |
-          scp -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no ubuntu@${MASTER_IP}:~/.kube/config kubeconfig
+          scp -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no ubuntu@$MASTER_IP:/home/ubuntu/.kube/config kubeconfig
           base64 kubeconfig > kubeconfig.b64
           cat kubeconfig.b64
+
+      - name: Lade kubeconfig.b64 als Artifact hoch
+        uses: actions/upload-artifact@v3
+        with:
+          name: kubeconfig
+          path: kubeconfig.b64
+
