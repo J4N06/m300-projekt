@@ -1,5 +1,3 @@
-# === GitHub Actions Workflow: .github/workflows/deploy.yml ===
-
 name: Terraform Deploy
 
 on:
@@ -18,15 +16,15 @@ jobs:
         working-directory: terraform
 
     steps:
-      - name: Checkout Repository
+      - name: Repository auschecken
         uses: actions/checkout@v4
 
-      - name: Set up Terraform
+      - name: Terraform vorbereiten
         uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: 1.6.0
 
-      - name: Configure AWS Credentials (mit Session Token)
+      - name: AWS-Zugang konfigurieren
         uses: aws-actions/configure-aws-credentials@v3
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
@@ -49,32 +47,31 @@ jobs:
           IPS=$(terraform output -json instance_public_ips | jq -r '.[]' | paste -sd "," -)
           echo "PUB_DNS=$IPS" >> $GITHUB_ENV
 
-      - name: Write Private SSH Key
+      - name: Schreibe SSH Private Key
         run: |
           mkdir -p ~/.ssh
           echo "${{ secrets.K8S_SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
 
-      - name: Copy SSH Public Key to all instances
+      - name: Kopiere SSH Public Key auf alle Instanzen
         run: |
           PUBKEY="${{ secrets.K8S_SSH_PUBLIC_KEY }}"
           for ip in $(echo $PUB_DNS | tr "," "\n"); do
-            echo " Waiting for SSH on $ip..."
+            echo "Waiting for SSH on $ip..."
             for i in {1..15}; do
               ssh -o StrictHostKeyChecking=no -o ConnectTimeout=5 -i ~/.ssh/id_rsa ubuntu@$ip "echo SSH ready" && break
               echo " Attempt $i: SSH not ready yet..."
               sleep 10
             done
 
-            echo " Adding SSH public key to $ip (if not already present)..."
+            echo "Füge Public Key zu $ip hinzu (falls nötig)..."
             ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ubuntu@$ip "\
               mkdir -p ~/.ssh && \
               grep -qxF \"$PUBKEY\" ~/.ssh/authorized_keys || echo \"$PUBKEY\" >> ~/.ssh/authorized_keys && \
               chmod 600 ~/.ssh/authorized_keys"
           done
 
-
-      - name: Create Ansible Inventory File
+      - name: Ansible Inventory generieren
         run: |
           IFS=',' read -r MASTER WORKER1 WORKER2 <<< "$PUB_DNS"
 
@@ -89,24 +86,22 @@ jobs:
           echo "[all:vars]" >> ../ansible/inventory.ini
           echo "ansible_ssh_private_key_file=~/.ssh/id_rsa" >> ../ansible/inventory.ini
           echo "ansible_ssh_common_args='-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null'" >> ../ansible/inventory.ini
-            - name: Setze MASTER_IP für späteren Zugriff
-        id: extract_master_ip
-        run: |
-          IFS=',' read -r MASTER WORKER1 WORKER2 <<< "$PUB_DNS"
+
           echo "MASTER_IP=$MASTER" >> $GITHUB_ENV
 
-      - name: Install Ansible
+      - name: Ansible installieren
         run: sudo apt-get update && sudo apt-get install -y ansible
 
-      - name: Run Ansible Playbook
+      - name: Ansible Playbook ausführen
         run: |
           cd ../ansible
           ansible-playbook -i inventory.ini playbook.yml
 
-      - name: Debug: Zeige MASTER_IP
-        run: echo "Master-IP: $MASTER_IP"
+      - name: Zeige MASTER_IP
+        run: |
+          echo "Master-IP: $MASTER_IP"
 
-      - name: Fetch kubeconfig vom Master
+      - name: kubeconfig vom Master holen
         run: |
           scp -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no ubuntu@$MASTER_IP:/home/ubuntu/.kube/config kubeconfig
           base64 kubeconfig > kubeconfig.b64
@@ -117,4 +112,3 @@ jobs:
         with:
           name: kubeconfig
           path: kubeconfig.b64
-
