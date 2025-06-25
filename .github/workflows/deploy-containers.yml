@@ -11,10 +11,10 @@ jobs:
     - name: Code auschecken
       uses: actions/checkout@v3
 
-    - name: Kubeconfig bereitstellen
+    - name: Setze Kubeconfig
       run: |
         mkdir -p ~/.kube
-        echo "${{ secrets.KUBECONFIG_CONTENT }}" > ~/.kube/config
+        echo "${{ secrets.KUBECONFIG_CONTENT }}" | base64 --decode > ~/.kube/config
 
     - name: Prometheus und Grafana deployen
       run: |
