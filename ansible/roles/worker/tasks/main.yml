@@ -41,11 +41,15 @@
 
 - name: Cluster Join ausführen
   command: bash /home/ubuntu/join-command.sh
-  
+
+- name: Kubernetes Worker-Hostname herausfinden
+  command: hostname
+  register: worker_hostname
+
 - name: Kubernetes Rolle 'worker' setzen
   shell: |
-    kubectl label node {{ inventory_hostname }} node-role.kubernetes.io/worker=worker --overwrite
+    kubectl label node {{ worker_hostname.stdout }} node-role.kubernetes.io/worker=worker --overwrite
   delegate_to: "{{ groups['master'][0] }}"
   environment:
     KUBECONFIG: /etc/kubernetes/admin.conf
-  when: inventory_hostname != groups['master'][0]
+
