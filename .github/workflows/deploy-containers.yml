@@ -1,0 +1,22 @@
+name: Deploy Monitoring Stack
+
+on:
+  workflow_dispatch:  # Manuelle Auslösung
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Code auschecken
+      uses: actions/checkout@v3
+
+    - name: Kubeconfig bereitstellen
+      run: |
+        mkdir -p ~/.kube
+        echo "${{ secrets.KUBECONFIG_CONTENT }}" > ~/.kube/config
+
+    - name: Prometheus und Grafana deployen
+      run: |
+        kubectl apply -f k8s/prometheus-deployment.yml
+        kubectl apply -f k8s/grafana-deployment.yml

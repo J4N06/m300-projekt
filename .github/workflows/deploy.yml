@@ -97,3 +97,8 @@ jobs:
         run: |
           cd ../ansible
           ansible-playbook -i inventory.ini playbook.yml
+      - name: Fetch kubeconfig from Master
+        run: |
+          scp -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no ubuntu@${MASTER_IP}:~/.kube/config kubeconfig
+          base64 kubeconfig > kubeconfig.b64
+          cat kubeconfig.b64
