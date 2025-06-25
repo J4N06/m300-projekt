@@ -5,3 +5,6 @@ output "instance_public_ips" {
 output "ssh_commands" {
   value = [for i in aws_instance.k8s_nodes : "ssh -i ~/.ssh/k8s/id_rsa ubuntu@${i.public_ip}"]
 }
+output "master_public_ip" {
+  value = aws_instance.k8s_nodes[0].public_ip
+}

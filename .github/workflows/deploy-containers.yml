@@ -1,22 +1,43 @@
 name: Deploy Monitoring Stack
 
 on:
-  workflow_dispatch:  # Manuelle Auslösung
+  workflow_dispatch:  # Nur manuell auslösbar
 
 jobs:
   deploy:
+    name: Deploy Prometheus & Grafana
     runs-on: ubuntu-latest
 
+    defaults:
+      run:
+        shell: bash
+
     steps:
-    - name: Code auschecken
-      uses: actions/checkout@v3
+    - name: Repository auschecken
+      uses: actions/checkout@v4
 
-    - name: Setze Kubeconfig
+    - name: SSH-Key vorbereiten
       run: |
-        mkdir -p ~/.kube
-        echo "${{ secrets.KUBECONFIG_CONTENT }}" | base64 --decode > ~/.kube/config
+        mkdir -p ~/.ssh
+        echo "${{ secrets.K8S_SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+        chmod 600 ~/.ssh/id_rsa
 
-    - name: Prometheus und Grafana deployen
+    - name: Terraform initialisieren
+      working-directory: terraform
+      run: terraform init
+
+    - id: get_master_ip
+      name: Terraform Output: Master IP extrahieren
       run: |
-        kubectl apply -f k8s/prometheus-deployment.yml
-        kubectl apply -f k8s/grafana-deployment.yml
+        cd terraform
+        terraform output -json instance_public_ips | jq -r '.[0]' > master_ip.txt
+        MASTER_IP=$(cat terraform/master_ip.txt)
+        echo "MASTER_IP=$MASTER_IP" >> $GITHUB_ENV
+
+    - name: Monitoring YAMLs auf Master kopieren
+      run: |
+        scp -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa k8s/*.yml ubuntu@$MASTER_IP:/home/ubuntu/k8s/
+
+    - name: Container auf Master deployen
+      run: |
+        ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ubuntu@$MASTER_IP "kubectl apply -f /home/ubuntu/k8s/"
