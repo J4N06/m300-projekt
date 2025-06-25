@@ -56,10 +56,11 @@
     var: kubelet_logs.stdout_lines
   when: kubeadm_output.rc != 0
 
-- name: Join-Befehl extrahieren und speichern (einzeilig)
+- name: Join-Befehl extrahieren und speichern (korrekt einzeilig)
   shell: |
-    JOIN_CMD=$(echo "{{ kubeadm_output.stdout_lines | join(' ') }}" | grep -oP 'kubeadm join\s+[^\"]+')
-    echo "$JOIN_CMD" > /home/ubuntu/join-command.sh
+    echo "{{ kubeadm_output.stdout_lines | join('\n') }}" | \
+    awk '/kubeadm join/{f=1} f{print} /--discovery-token-ca-cert-hash/{f=0}' | \
+    tr -d '\n' | sed 's/\s\+/ /g' > /home/ubuntu/join-command.sh
     chmod +x /home/ubuntu/join-command.sh
   when: kubeadm_output.rc == 0
 
