@@ -68,7 +68,12 @@ jobs:
               echo " Attempt $i: SSH not ready yet..."
               sleep 10
             done
-            ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ubuntu@$ip "mkdir -p ~/.ssh && echo \"$PUBKEY\" >> ~/.ssh/authorized_keys && chmod 600 ~/.ssh/authorized_keys"
+
+            echo " Adding SSH public key to $ip (if not already present)..."
+            ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ubuntu@$ip "\
+              mkdir -p ~/.ssh && \
+              grep -qxF \"$PUBKEY\" ~/.ssh/authorized_keys || echo \"$PUBKEY\" >> ~/.ssh/authorized_keys && \
+              chmod 600 ~/.ssh/authorized_keys"
           done
 
 
