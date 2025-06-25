@@ -100,6 +100,14 @@ jobs:
       - name: Zeige MASTER_IP
         run: |
           echo "Master-IP: $MASTER_IP"
+          
+      - name: Setze MASTER_IP aus Terraform Output
+        id: get_master_ip
+        working-directory: terraform
+        run: |
+          MASTER_IP=$(terraform output -raw master_public_ip)
+          echo "MASTER_IP=$MASTER_IP" >> $GITHUB_ENV
+
 
       - name: kubeconfig vom Master holen
         run: |
