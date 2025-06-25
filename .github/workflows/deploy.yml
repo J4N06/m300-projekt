@@ -108,7 +108,7 @@ jobs:
           cat kubeconfig.b64
 
       - name: Lade kubeconfig.b64 als Artifact hoch
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: kubeconfig
           path: kubeconfig.b64
