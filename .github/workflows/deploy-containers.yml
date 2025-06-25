@@ -8,16 +8,23 @@ jobs:
     name: Deploy Prometheus & Grafana
     runs-on: ubuntu-latest
 
+    env:
+      MASTER_IP: ${{ secrets.K8S_MASTER_PUBLIC_IP }}
+
     steps:
       - name: Repository auschecken
         uses: actions/checkout@v4
 
-      - name: Setze kubeconfig
+      - name: SSH-Key vorbereiten
         run: |
-          mkdir -p ~/.kube
-          echo "${{ secrets.KUBECONFIG_CONTENT }}" | base64 --decode > ~/.kube/config
+          mkdir -p ~/.ssh
+          echo "${{ secrets.K8S_SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
 
-      - name: Deploy Monitoring
+      - name: Monitoring-Dateien auf Master kopieren
         run: |
-          kubectl apply -f k8s/prometheus-deployment.yml
-          kubectl apply -f k8s/grafana-deployment.yml
+          scp -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa k8s/*.yml ubuntu@$MASTER_IP:/home/ubuntu/k8s/
+
+      - name: Monitoring auf Master deployen
+        run: |
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ubuntu@$MASTER_IP "kubectl apply -f /home/ubuntu/k8s/"
