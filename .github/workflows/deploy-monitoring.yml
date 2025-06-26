@@ -1,0 +1,48 @@
+name: Deploy Monitoring Stack
+
+on:
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    name: Deploy Prometheus & Grafana
+    runs-on: ubuntu-latest
+
+    env:
+      MASTER_IP: ${{ secrets.K8S_MASTER_PUBLIC_IP }}
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Prepare SSH Key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.K8S_SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+
+      - name: Upload Monitoring YAMLs
+        run: |
+          scp -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa k8s/*.yaml ubuntu@$MASTER_IP:/home/ubuntu/k8s/
+
+      - name: Apply Monitoring to Cluster
+        run: |
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ubuntu@$MASTER_IP << 'EOF'
+            cd /home/ubuntu/k8s
+
+            echo "Cleaning existing resources..."
+            kubectl delete deployment prometheus --ignore-not-found
+            kubectl delete deployment grafana --ignore-not-found
+            kubectl delete daemonset node-exporter --ignore-not-found
+            kubectl delete svc prometheus-service --ignore-not-found
+            kubectl delete svc grafana-service --ignore-not-found
+            kubectl delete configmap prometheus-config --ignore-not-found
+            kubectl delete configmap grafana-datasources --ignore-not-found
+            kubectl delete configmap grafana-dashboards --ignore-not-found
+            kubectl delete configmap grafana-dashboard-node-exporter --ignore-not-found
+
+            echo "Applying new manifests..."
+            kubectl apply -f prometheus.yaml
+            kubectl apply -f grafana.yaml
+            kubectl apply -f node-exporter.yaml
+          EOF

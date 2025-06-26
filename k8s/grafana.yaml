@@ -33,18 +33,6 @@ data:
           path: /etc/grafana/dashboards
 
 ---
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: grafana-dashboard-node-exporter
-data:
-  node-exporter-dashboard.json: |
-    {
-      "overwrite": true,
-      "dashboard": {}
-    }
-
----
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -71,9 +59,6 @@ spec:
             - name: db
               mountPath: /etc/grafana/provisioning/dashboards/provider.yaml
               subPath: provider.yaml
-            - name: dashboard-json
-              mountPath: /etc/grafana/dashboards/node-exporter-dashboard.json
-              subPath: node-exporter-dashboard.json
       volumes:
         - name: ds
           configMap:
@@ -81,9 +66,6 @@ spec:
         - name: db
           configMap:
             name: grafana-dashboards
-        - name: dashboard-json
-          configMap:
-            name: grafana-dashboard-node-exporter
 
 ---
 apiVersion: v1
