@@ -1,0 +1,36 @@
+# k8s/postgres-init-configmap.yaml
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: postgres-init
+  namespace: buenzli-shop
+
+data:
+  init.sql: |
+    CREATE TABLE IF NOT EXISTS users (
+      id SERIAL PRIMARY KEY,
+      email VARCHAR(255) UNIQUE NOT NULL,
+      password VARCHAR(255) NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS products (
+      id SERIAL PRIMARY KEY,
+      name VARCHAR(100) NOT NULL,
+      description TEXT,
+      price DECIMAL(6,2) NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS orders (
+      id SERIAL PRIMARY KEY,
+      email VARCHAR(255) NOT NULL,
+      items JSONB NOT NULL,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+
+    INSERT INTO products (name, description, price) VALUES
+      ('Cervelat', 'Der Klassiker unter den Schweizer Würsten.', 2.50),
+      ('Rivella', 'Erfrischungsgetränk mit Milchserum – typisch Schweiz.', 1.80),
+      ('Ovomaltine Crunchy Cream', 'Schweizer Brotaufstrich mit Energie!', 4.90),
+      ('Fondue-Set Mini', 'Für gemütliche Käseabende zu zweit.', 29.90),
+      ('Toblerone 200g', 'Die legendäre Schokolade mit den Bergen.', 3.20);
