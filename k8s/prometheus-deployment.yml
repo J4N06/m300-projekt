@@ -28,6 +28,7 @@ kind: Deployment
 metadata:
   name: prometheus
 spec:
+  serviceAccountName: prometheus
   replicas: 1
   selector:
     matchLabels:
