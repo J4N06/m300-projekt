@@ -101,22 +101,19 @@
   environment:
     KUBECONFIG: /etc/kubernetes/admin.conf
 
+- name: Calico CRDs installieren (kompakt, v3.30.2)
+  command: kubectl apply -f https://raw.githubusercontent.com/projectcalico/calico/v3.30.2/manifests/operator-crds.yaml
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+
 - name: Tigera Operator (Calico) installieren
-  command: kubectl apply -f https://raw.githubusercontent.com/projectcalico/calico/v3.27.0/manifests/tigera-operator.yaml
+  command: kubectl apply -f https://raw.githubusercontent.com/projectcalico/calico/v3.30.2/manifests/tigera-operator.yaml
   environment:
     KUBECONFIG: /etc/kubernetes/admin.conf
 
 - name: Calico VXLAN-Konfiguration anwenden
   copy:
     content: |
-      apiVersion: crd.projectcalico.org/v1
-      kind: FelixConfiguration
-      metadata:
-        name: default
-      spec:
-        ipipEnabled: false
-        vxlanEnabled: true
-      ---
       apiVersion: operator.tigera.io/v1
       kind: Installation
       metadata:
@@ -126,18 +123,17 @@
         calicoNetwork:
           bgp: Disabled
           ipPools:
-          - blockSize: 26
-            cidr: 192.168.0.0/16
+          - cidr: 192.168.0.0/16
             encapsulation: VXLAN
             natOutgoing: Enabled
             nodeSelector: all()
-    dest: /home/ubuntu/calico-vxlan.yaml
+    dest: /home/ubuntu/custom-resources.yaml
     owner: ubuntu
     group: ubuntu
     mode: '0644'
 
 - name: Calico VXLAN Deployment ausrollen
-  command: kubectl apply -f /home/ubuntu/calico-vxlan.yaml
+  command: kubectl apply -f /home/ubuntu/custom-resources.yaml
   environment:
     KUBECONFIG: /etc/kubernetes/admin.conf
   when: kubeadm_output.rc == 0
