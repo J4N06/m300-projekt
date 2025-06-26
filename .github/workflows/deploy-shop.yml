@@ -1,4 +1,4 @@
-# .github/workflows/deploy-buenzli-shop.yml
+# .github/workflows/deploy-shop.yml
 
 name: Deploy Bünzli Shop
 
@@ -23,15 +23,18 @@ jobs:
         env:
           K8S_SSH_PRIVATE_KEY: ${{ secrets.K8S_SSH_PRIVATE_KEY }}
 
-      - name: Create remote folder and upload YAMLs
+      - name: Upload Kubernetes YAMLs from webshop/k8s
         run: |
           ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ubuntu@$MASTER_IP 'mkdir -p ~/k8s'
-          scp -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa k8s/*.yaml ubuntu@$MASTER_IP:~/k8s/
+          scp -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa webshop/k8s/*.yaml ubuntu@$MASTER_IP:~/k8s/
 
       - name: Apply Kubernetes Resources
         run: |
           ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ubuntu@$MASTER_IP << 'EOF'
             cd ~/k8s
+            echo -e "\033[34m-- Dateien im Ordner ~/k8s --\033[0m"
+            ls -la
+
             echo -e "\033[34m-- Wende Ressourcen an --\033[0m"
             kubectl apply -f namespace.yaml
             kubectl apply -f secrets.yaml
