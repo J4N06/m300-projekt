@@ -1,0 +1,34 @@
+name: Deploy Webshop Stack
+
+on:
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    name: Deploy Webshop (Frontend, Backend, DB)
+    runs-on: ubuntu-latest
+
+    env:
+      MASTER_IP: ${{ secrets.K8S_MASTER_PUBLIC_IP }}
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Prepare SSH Key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.K8S_SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+
+      - name: Upload Webshop YAML
+        run: |
+          scp -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa k8s/webshop.yaml ubuntu@$MASTER_IP:/home/ubuntu/
+
+      - name: Apply Webshop Manifests
+        run: |
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ubuntu@$MASTER_IP << 'EOF'
+            echo "Deploying Webshop Stack..."
+            kubectl apply -f /home/ubuntu/webshop.yaml
+            echo "Deployment done."
+          EOF
