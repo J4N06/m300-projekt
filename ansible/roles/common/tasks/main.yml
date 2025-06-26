@@ -61,7 +61,7 @@
   replace:
     path: /etc/containerd/config.toml
     regexp: '^\s*SystemdCgroup\s*=\s*false'
-    replace: 'SystemdCgroup = true'
+    replace: "SystemdCgroup = true"
 
 - name: Pause Image auf 3.9 setzen
   lineinfile:
@@ -92,3 +92,8 @@
       image-endpoint: unix:///var/run/containerd/containerd.sock
       timeout: 10
       debug: false
+
+- name: Install containernetworking Plugin
+  shell: |
+    sudo mkdir -p /opt/cni/bin
+    curl -L https://github.com/containernetworking/plugins/releases/download/v1.4.0/cni-plugins-linux-amd64-v1.4.0.tgz | sudo tar -C /opt/cni/bin -xz

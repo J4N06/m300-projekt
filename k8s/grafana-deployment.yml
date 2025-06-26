@@ -33,25 +33,6 @@ data:
           path: /etc/grafana/dashboards
 
 ---
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: grafana-dashboard-node-exporter
-data:
-  node-exporter-dashboard.json: |
-    {
-      "overwrite": true,
-      "dashboard": {
-        "id": null,
-        "uid": "000000001",
-        "title": "Node Exporter Full",
-        "panels": [ ... ],
-        ...
-      }
-    }
-    # Hier musst du den vollständigen JSON-Inhalt von Dashboard ID 1860 einfügen.
-
----
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -66,6 +47,16 @@ spec:
       labels:
         app: grafana
     spec:
+      initContainers:
+        - name: fetch-dashboard
+          image: curlimages/curl
+          command: ["sh", "-c"]
+          args:
+            - curl -L https://raw.githubusercontent.com/j4n06/m300-projekt/main/k8s/grafana/1860_rev41.json -o /dashboards/node-exporter-dashboard.json
+          volumeMounts:
+            - name: dashboard-json
+              mountPath: /dashboards
+
       containers:
         - name: grafana
           image: grafana/grafana
@@ -79,8 +70,8 @@ spec:
               mountPath: /etc/grafana/provisioning/dashboards/provider.yaml
               subPath: provider.yaml
             - name: dashboard-json
-              mountPath: /etc/grafana/dashboards/node-exporter-dashboard.json
-              subPath: node-exporter-dashboard.json
+              mountPath: /etc/grafana/dashboards
+
       volumes:
         - name: ds
           configMap:
@@ -89,8 +80,7 @@ spec:
           configMap:
             name: grafana-dashboards
         - name: dashboard-json
-          configMap:
-            name: grafana-dashboard-node-exporter
+          emptyDir: {}
 
 ---
 apiVersion: v1
