@@ -8,6 +8,9 @@ jobs:
     name: Deploy Prometheus & Grafana
     runs-on: ubuntu-latest
 
+    env:
+      MASTER_IP: ${{ secrets.K8S_MASTER_PUBLIC_IP }}
+
     steps:
       - name: Repository auschecken
         uses: actions/checkout@v4
@@ -18,24 +21,10 @@ jobs:
           echo "${{ secrets.K8S_SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
 
-      - name: Terraform vorbereiten
-        uses: hashicorp/setup-terraform@v3
-        with:
-          terraform_version: 1.6.0
-
-      - name: Terraform Init (für Output)
-        working-directory: terraform
-        run: terraform init
-
-      - name: Setze MASTER_IP aus Terraform Output
-        id: get_master_ip
-        working-directory: terraform
-        run: |
-          echo "MASTER_IP=$(terraform output -raw master_public_ip)" >> $GITHUB_ENV
-
       - name: "Debug: Zeige MASTER_IP"
         run: |
           echo "Master-IP ist: $MASTER_IP"
+
       - name: Monitoring-Dateien auf Master kopieren
         run: |
           scp -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa k8s/*.yml ubuntu@$MASTER_IP:/home/ubuntu/k8s/
