@@ -32,9 +32,7 @@ jobs:
         run: |
           ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ubuntu@$MASTER_IP << 'EOF'
             cd ~/k8s
-            echo [34m-- Dateien im Ordner ~/k8s --[0m
-            ls -la
-            echo [34m-- Wende Ressourcen an --[0m
+            echo -e "\033[34m-- Wende Ressourcen an --\033[0m"
             kubectl apply -f namespace.yaml
             kubectl apply -f secrets.yaml
             kubectl apply -f postgres-init-configmap.yaml
