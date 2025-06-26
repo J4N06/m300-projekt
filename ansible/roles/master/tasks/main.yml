@@ -89,8 +89,55 @@
     mode: 0600
   when: kubeadm_output.rc == 0
 
-- name: Calico Netzwerk installieren
-  command: kubectl apply -f https://raw.githubusercontent.com/projectcalico/calico/v3.27.0/manifests/calico.yaml
+- name: Warte, bis Kubernetes API erreichbar ist
+  uri:
+    url: https://127.0.0.1:6443/healthz
+    method: GET
+    validate_certs: no
+  register: result
+  retries: 20
+  delay: 6
+  until: result.status == 200
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+
+- name: Tigera Operator (Calico) installieren
+  command: kubectl apply -f https://raw.githubusercontent.com/projectcalico/calico/v3.27.0/manifests/tigera-operator.yaml
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+
+- name: Calico VXLAN-Konfiguration anwenden
+  copy:
+    content: |
+      apiVersion: crd.projectcalico.org/v1
+      kind: FelixConfiguration
+      metadata:
+        name: default
+      spec:
+        ipipEnabled: false
+        vxlanEnabled: true
+      ---
+      apiVersion: operator.tigera.io/v1
+      kind: Installation
+      metadata:
+        name: default
+      spec:
+        kubernetesProvider: kubeadm
+        calicoNetwork:
+          bgp: Disabled
+          ipPools:
+          - blockSize: 26
+            cidr: 192.168.0.0/16
+            encapsulation: VXLAN
+            natOutgoing: Enabled
+            nodeSelector: all()
+    dest: /home/ubuntu/calico-vxlan.yaml
+    owner: ubuntu
+    group: ubuntu
+    mode: '0644'
+
+- name: Calico VXLAN Deployment ausrollen
+  command: kubectl apply -f /home/ubuntu/calico-vxlan.yaml
   environment:
     KUBECONFIG: /etc/kubernetes/admin.conf
   when: kubeadm_output.rc == 0
