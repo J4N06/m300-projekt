@@ -17,7 +17,8 @@ spec:
     spec:
       containers:
         - name: backend
-          image: your-dockerhub/buenzli-backend:latest
+          image: ghcr.io/j4n06/buenzli-backend:latest
+          imagePullPolicy: Always
           ports:
             - containerPort: 3000
           env:
@@ -33,6 +34,8 @@ spec:
                   key: JWT_SECRET
             - name: MAIL_SERVICE_URL
               value: "http://mailservice:4000"
+      imagePullSecrets:
+        - name: ghcr-auth
 ---
 apiVersion: v1
 kind: Service
