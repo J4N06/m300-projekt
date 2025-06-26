@@ -27,7 +27,7 @@ jobs:
 
       - name: Monitoring-Dateien auf Master kopieren
         run: |
-          scp -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa k8s/*.yml ubuntu@$MASTER_IP:/home/ubuntu/k8s/
+          scp -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa k8s/*.yaml ubuntu@$MASTER_IP:/home/ubuntu/k8s/
 
       - name: Monitoring auf Master deployen
         run: |
