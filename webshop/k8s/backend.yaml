@@ -1,5 +1,3 @@
-# k8s/backend.yaml
-
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -15,6 +13,8 @@ spec:
       labels:
         app: backend
     spec:
+      imagePullSecrets:
+        - name: ghcr-auth
       containers:
         - name: backend
           image: ghcr.io/j4n06/buenzli-backend:latest
@@ -34,18 +34,3 @@ spec:
                   key: JWT_SECRET
             - name: MAIL_SERVICE_URL
               value: "http://mailservice:4000"
-      imagePullSecrets:
-        - name: ghcr-auth
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: backend-service
-  namespace: buenzli-shop
-spec:
-  selector:
-    app: backend
-  ports:
-    - port: 3000
-      targetPort: 3000
-  type: ClusterIP
