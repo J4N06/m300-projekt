@@ -23,14 +23,18 @@ jobs:
         env:
           K8S_SSH_PRIVATE_KEY: ${{ secrets.K8S_SSH_PRIVATE_KEY }}
 
-      - name: Upload Kubernetes YAMLs
+      - name: Create remote folder and upload YAMLs
         run: |
-          scp -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa -r k8s/ ubuntu@$MASTER_IP:/home/ubuntu/k8s/
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ubuntu@$MASTER_IP 'mkdir -p ~/k8s'
+          scp -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa k8s/*.yaml ubuntu@$MASTER_IP:~/k8s/
 
       - name: Apply Kubernetes Resources
         run: |
           ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ubuntu@$MASTER_IP << 'EOF'
-            cd /home/ubuntu/k8s
+            cd ~/k8s
+            echo [34m-- Dateien im Ordner ~/k8s --[0m
+            ls -la
+            echo [34m-- Wende Ressourcen an --[0m
             kubectl apply -f namespace.yaml
             kubectl apply -f secrets.yaml
             kubectl apply -f postgres-init-configmap.yaml
