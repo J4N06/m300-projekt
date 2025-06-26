@@ -42,7 +42,7 @@
     daemon_reload: true
 
 - name: Kubernetes Cluster initialisieren
-  command: kubeadm init --pod-network-cidr=10.244.0.0/16 --ignore-preflight-errors=Port-10250
+  command: kubeadm init --pod-network-cidr=192.168.0.0/16 --ignore-preflight-errors=Port-10250
   register: kubeadm_output
   ignore_errors: true
 
@@ -89,8 +89,8 @@
     mode: 0600
   when: kubeadm_output.rc == 0
 
-- name: Flannel Netzwerk installieren
-  command: kubectl apply -f https://raw.githubusercontent.com/flannel-io/flannel/master/Documentation/kube-flannel.yml
+- name: Calico Netzwerk installieren
+  command: kubectl apply -f https://raw.githubusercontent.com/projectcalico/calico/v3.27.0/manifests/calico.yaml
   environment:
     KUBECONFIG: /etc/kubernetes/admin.conf
   when: kubeadm_output.rc == 0
