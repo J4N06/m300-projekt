@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
         - name: frontend
-          image: your-dockerhub/buenzli-frontend:latest
+          image: ghcr.io/j4n06/buenzli-frontend:latest
           ports:
             - containerPort: 80
 ---

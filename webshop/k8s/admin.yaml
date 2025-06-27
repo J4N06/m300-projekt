@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
         - name: admin
-          image: your-dockerhub/buenzli-admin:latest
+          image: ghcr.io/j4n06/buenzli-admin:latest
           ports:
             - containerPort: 80
 ---

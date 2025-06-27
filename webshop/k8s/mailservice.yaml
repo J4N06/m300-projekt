@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
         - name: mailservice
-          image: your-dockerhub/buenzli-mailservice:latest
+          image: ghcr.io/j4n06/buenzli-mailservice:latest
           ports:
             - containerPort: 4000
           env:
