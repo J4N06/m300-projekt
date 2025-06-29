@@ -1,0 +1,6 @@
+service:
+  type: LoadBalancer
+  port: 9000
+
+ingress:
+  enabled: false

@@ -1,0 +1,36 @@
+name: Deploy Medusa with Helm
+
+on:
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    env:
+      KUBECONFIG: ${{ github.workspace }}/kubeconfig
+
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v4
+
+    - name: Write kubeconfig
+      run: |
+        echo "${{ secrets.KUBECONFIG_CONTENT }}" > kubeconfig
+
+    - name: Install Helm
+      uses: azure/setup-helm@v3
+
+    - name: Helm Upgrade/Install Medusa
+      run: |
+        helm upgrade --install mymedusa ./k8s/helm/medusa -f ./k8s/helm/medusa/values.yaml --kubeconfig $KUBECONFIG
+
+    - name: Apply ClusterIssuer
+      run: |
+        kubectl apply -f ./k8s/cluster-issuer.yaml --kubeconfig $KUBECONFIG
+
+    - name: Check Pods
+      run: kubectl get pods -A --kubeconfig $KUBECONFIG
+
+    - name: Check Ingress
+      run: kubectl get ingress -A --kubeconfig $KUBECONFIG
