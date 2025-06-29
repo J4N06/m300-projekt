@@ -1,0 +1,48 @@
+# .github/workflows/deploy-shop.yml
+
+name: Deploy Bünzli Shop
+
+on:
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      MASTER_IP: ${{ secrets.K8S_MASTER_PUBLIC_IP }}
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Prepare SSH Key
+        run: |
+          mkdir -p ~/.ssh
+          echo "$K8S_SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+        env:
+          K8S_SSH_PRIVATE_KEY: ${{ secrets.K8S_SSH_PRIVATE_KEY }}
+
+      - name: Upload Kubernetes YAMLs from webshop/k8s
+        run: |
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ubuntu@$MASTER_IP 'mkdir -p ~/k8s'
+          scp -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa webshop/k8s/*.yaml ubuntu@$MASTER_IP:~/k8s/
+
+      - name: Apply Kubernetes Resources
+        run: |
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ubuntu@$MASTER_IP << 'EOF'
+            cd ~/k8s
+            echo -e "\033[34m-- Dateien im Ordner ~/k8s --\033[0m"
+            ls -la
+
+            echo -e "\033[34m-- Wende Ressourcen an --\033[0m"
+            kubectl apply -f namespace.yaml
+            kubectl apply -f secrets.yaml
+            kubectl apply -f postgres-init-configmap.yaml
+            kubectl apply -f postgres.yaml
+            kubectl apply -f backend.yaml
+            kubectl apply -f mailservice.yaml
+            kubectl apply -f frontend.yaml
+            kubectl apply -f admin.yaml
+            kubectl apply -f ingress.yaml || echo "Kein Ingress installiert – weiter mit NodePort."
+          EOF
