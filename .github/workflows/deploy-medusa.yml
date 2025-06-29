@@ -7,21 +7,38 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
 
+    env:
+      KUBECONFIG: ${{ github.workspace }}/kubeconfig
+
     steps:
-    - name: Checkout Code
+    - name: Checkout Repo
       uses: actions/checkout@v4
 
     - name: Install Ansible
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y ansible
+      run: sudo apt-get update && sudo apt-get install -y ansible
 
-    - name: Setup SSH
+    - name: Schreibe SSH Private Key
       run: |
-        mkdir -p ~/.ssh
-        echo "${{ secrets.K8S_SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
-        chmod 600 ~/.ssh/id_rsa
-        ssh-keyscan ${{ secrets.K8S_MASTER_PUBLIC_IP }} >> ~/.ssh/known_hosts
+          mkdir -p ~/.ssh
+          echo "${{ secrets.K8S_SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+    - name: Kopiere SSH Public Key auf alle Instanzen
+      run: |
+          PUBKEY="${{ secrets.K8S_SSH_PUBLIC_KEY }}"
+          for ip in $(echo $PUB_DNS | tr "," "\n"); do
+            echo "Waiting for SSH on $ip..."
+            for i in {1..15}; do
+              ssh -o StrictHostKeyChecking=no -o ConnectTimeout=5 -i ~/.ssh/id_rsa ubuntu@$ip "echo SSH ready" && break
+              echo " Attempt $i: SSH not ready yet..."
+              sleep 10
+            done
+
+            echo "Füge Public Key zu $ip hinzu (falls nötig)..."
+            ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ubuntu@$ip "\
+              mkdir -p ~/.ssh && \
+              grep -qxF \"$PUBKEY\" ~/.ssh/authorized_keys || echo \"$PUBKEY\" >> ~/.ssh/authorized_keys && \
+              chmod 600 ~/.ssh/authorized_keys"
+          done
 
     - name: Run Medusa Deploy Playbook
       run: |
