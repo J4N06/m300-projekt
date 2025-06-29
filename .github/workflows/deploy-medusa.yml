@@ -14,18 +14,21 @@ jobs:
     - name: Checkout Code
       uses: actions/checkout@v4
 
-    - name: Write kubeconfig
+    - name: Decode kubeconfig from Base64
       run: |
-        echo "${{ secrets.KUBECONFIG_CONTENT }}" > kubeconfig
+        echo "${{ secrets.KUBECONFIG_CONTENT }}" | base64 --decode > kubeconfig
+        chmod 600 kubeconfig
 
     - name: Install Helm
       uses: azure/setup-helm@v3
 
     - name: Helm Upgrade/Install Medusa
       run: |
-        helm upgrade --install mymedusa ./k8s/helm/medusa -f ./k8s/helm/medusa/values.yaml --kubeconfig $KUBECONFIG
+        helm upgrade --install mymedusa ./k8s/helm/medusa \
+          -f ./k8s/helm/medusa/values.yaml \
+          --kubeconfig $KUBECONFIG
 
-    - name: Apply ClusterIssuer
+    - name: Apply ClusterIssuer (cert-manager)
       run: |
         kubectl apply -f ./k8s/cluster-issuer.yaml --kubeconfig $KUBECONFIG
 
