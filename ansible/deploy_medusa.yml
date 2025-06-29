@@ -4,7 +4,6 @@
   become: yes
 
   vars:
-    # Passe hier deinen echten Git-Repo-Link an
     repo_url: 'https://github.com/J4N06/m300-projekt.git'
     repo_dest: /home/ubuntu/M300-PROJEKT
     kubeconfig_path: /home/ubuntu/.kube/config
@@ -32,11 +31,11 @@
         creates: /usr/local/bin/helm
 
     - name: 🚀 Helm Upgrade/Install Medusa
-  ansible.builtin.shell: |
-    helm upgrade --install mymedusa {{ medusa_chart_path }} \
-      -f {{ values_file }} \
-      --kubeconfig {{ kubeconfig_path }} \
-      --atomic --wait
+      ansible.builtin.shell: |
+        helm upgrade --install mymedusa {{ medusa_chart_path }} \
+          -f {{ values_file }} \
+          --kubeconfig {{ kubeconfig_path }} \
+          --atomic --wait
 
     - name: 🔍 Check Services
       ansible.builtin.shell: |
