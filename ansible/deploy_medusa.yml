@@ -4,23 +4,42 @@
   become: yes
 
   vars:
+    # Passe hier deinen echten Git-Repo-Link an
+    repo_url: 'https://github.com/J4N06/m300-projekt.git'
+    repo_dest: /home/ubuntu/M300-PROJEKT
     kubeconfig_path: /home/ubuntu/.kube/config
-    medusa_chart_path: /home/ubuntu/M300-PROJEKT/k8s/helm/medusa
-    values_file: /home/ubuntu/M300-PROJEKT/k8s/helm/medusa/values.yaml
+    medusa_chart_path: "{{ repo_dest }}/k8s/helm/medusa"
+    values_file: "{{ repo_dest }}/k8s/helm/medusa/values.yaml"
 
   tasks:
-    - name: Ensure Helm installed
-      shell: curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+
+    - name: ✅ Ensure Git is installed
+      ansible.builtin.package:
+        name: git
+        state: present
+
+    - name: ✅ Clone/Update Projekt-Repo auf dem Master
+      ansible.builtin.git:
+        repo: "{{ repo_url }}"
+        dest: "{{ repo_dest }}"
+        version: main
+        update: yes
+
+    - name: ✅ Ensure Helm is installed
+      ansible.builtin.shell: |
+        curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
       args:
         creates: /usr/local/bin/helm
 
-    - name: Helm Upgrade/Install Medusa
-      shell: |
+    - name: 🚀 Helm Upgrade/Install Medusa
+      ansible.builtin.shell: |
         helm upgrade --install mymedusa {{ medusa_chart_path }} \
           -f {{ values_file }} \
-          --kubeconfig {{ kubeconfig_path }} --atomic --wait
+          --kubeconfig {{ kubeconfig_path }} \
+          --atomic --wait
 
-    - name: Check Service
-      shell: kubectl get svc -A
+    - name: 🔍 Check Services
+      ansible.builtin.shell: |
+        kubectl get svc -A
       environment:
         KUBECONFIG: "{{ kubeconfig_path }}"

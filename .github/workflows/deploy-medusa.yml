@@ -37,6 +37,6 @@ jobs:
         echo "Generated inventory.ini:"
         cat ansible/inventory.ini
 
-    - name: 🚀 Run Medusa Deploy Playbook
+    - name: Run Medusa Deploy Playbook
       run: |
         ansible-playbook -i ansible/inventory.ini ansible/deploy_medusa.yml
