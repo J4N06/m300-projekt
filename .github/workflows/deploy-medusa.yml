@@ -23,6 +23,6 @@ jobs:
         chmod 600 ~/.ssh/id_rsa
         ssh-keyscan ${{ secrets.K8S_MASTER_PUBLIC_IP }} >> ~/.ssh/known_hosts
 
-    - name: Run Medusa Deploy
+    - name: Run Medusa Deploy Playbook
       run: |
         ansible-playbook -i ansible/inventory.ini ansible/deploy_medusa.yml
