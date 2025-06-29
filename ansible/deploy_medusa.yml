@@ -32,11 +32,11 @@
         creates: /usr/local/bin/helm
 
     - name: 🚀 Helm Upgrade/Install Medusa
-      ansible.builtin.shell: |
-        helm upgrade --install mymedusa {{ medusa_chart_path }} \
-          -f {{ values_file }} \
-          --kubeconfig {{ kubeconfig_path }} \
-          --atomic --wait
+  ansible.builtin.shell: |
+    helm upgrade --install mymedusa {{ medusa_chart_path }} \
+      -f {{ values_file }} \
+      --kubeconfig {{ kubeconfig_path }} \
+      --atomic --wait
 
     - name: 🔍 Check Services
       ansible.builtin.shell: |
