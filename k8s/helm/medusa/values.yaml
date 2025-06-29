@@ -1,6 +1,14 @@
+replicaCount: 1
+
 image:
   repository: ghcr.io/medusajs/medusa
   tag: latest
+
+env:
+  DATABASE_URL: "postgresql://medusa:supersecret@medusa-postgresql:5432/medusa"
+  REDIS_URL: "redis://:redispassword@medusa-redis-master:6379"
+  JWT_SECRET: "somesecret"
+  COOKIE_SECRET: "anothersecret"
 
 service:
   type: LoadBalancer

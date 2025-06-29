@@ -3,7 +3,7 @@ kind: Deployment
 metadata:
   name: medusa
 spec:
-  replicas: {{ .Values.replicaCount }}
+  replicas: {{ .Values.replicaCount | default 1 }}
   selector:
     matchLabels:
       app: medusa
@@ -14,11 +14,15 @@ spec:
     spec:
       containers:
       - name: medusa
-        image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+        image: "{{ .Values.image.repository | default \"ghcr.io/medusajs/medusa\" }}:{{ .Values.image.tag | default \"latest\" }}"
         ports:
-        - containerPort: 9000
+          - containerPort: 9000
         env:
-        - name: DATABASE_URL
-          value: "{{ .Values.env.DATABASE_URL }}"
-        - name: REDIS_URL
-          value: "{{ .Values.env.REDIS_URL }}"
+          - name: DATABASE_URL
+            value: "{{ .Values.env.DATABASE_URL | default \"\" }}"
+          - name: REDIS_URL
+            value: "{{ .Values.env.REDIS_URL | default \"\" }}"
+          - name: JWT_SECRET
+            value: "{{ .Values.env.JWT_SECRET | default \"\" }}"
+          - name: COOKIE_SECRET
+            value: "{{ .Values.env.COOKIE_SECRET | default \"\" }}"
