@@ -1,4 +1,4 @@
-name: Deploy Medusa with Helm
+name: Deploy Medusa
 
 on:
   workflow_dispatch:
@@ -7,33 +7,22 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
 
-    env:
-      KUBECONFIG: ${{ github.workspace }}/kubeconfig
-
     steps:
     - name: Checkout Code
       uses: actions/checkout@v4
 
-    - name: Decode kubeconfig from Base64
+    - name: Install Ansible
       run: |
-        echo "${{ secrets.KUBECONFIG_CONTENT }}" | base64 --decode > kubeconfig
-        chmod 600 kubeconfig
+        sudo apt-get update
+        sudo apt-get install -y ansible
 
-    - name: Install Helm
-      uses: azure/setup-helm@v3
-
-    - name: Helm Upgrade/Install Medusa
+    - name: Setup SSH
       run: |
-        helm upgrade --install mymedusa ./k8s/helm/medusa \
-          -f ./k8s/helm/medusa/values.yaml \
-          --kubeconfig $KUBECONFIG
+        mkdir -p ~/.ssh
+        echo "${{ secrets.K8S_SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+        chmod 600 ~/.ssh/id_rsa
+        ssh-keyscan ${{ secrets.K8S_MASTER_PUBLIC_IP }} >> ~/.ssh/known_hosts
 
-    - name: Apply ClusterIssuer (cert-manager)
+    - name: Run Medusa Deploy
       run: |
-        kubectl apply -f ./k8s/cluster-issuer.yaml --kubeconfig $KUBECONFIG
-
-    - name: Check Pods
-      run: kubectl get pods -A --kubeconfig $KUBECONFIG
-
-    - name: Check Ingress
-      run: kubectl get ingress -A --kubeconfig $KUBECONFIG
+        ansible-playbook -i ansible/inventory.ini ansible/deploy_medusa.yml

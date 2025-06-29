@@ -1,0 +1,26 @@
+---
+- name: Deploy Medusa (Test Only)
+  hosts: master
+  become: yes
+
+  vars:
+    kubeconfig_path: /home/ubuntu/.kube/config
+    medusa_chart_path: /home/ubuntu/M300-PROJEKT/k8s/helm/medusa
+    values_file: /home/ubuntu/M300-PROJEKT/k8s/helm/medusa/values.yaml
+
+  tasks:
+    - name: Ensure Helm installed
+      shell: curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+      args:
+        creates: /usr/local/bin/helm
+
+    - name: Helm Upgrade/Install Medusa
+      shell: |
+        helm upgrade --install mymedusa {{ medusa_chart_path }} \
+          -f {{ values_file }} \
+          --kubeconfig {{ kubeconfig_path }} --atomic --wait
+
+    - name: Check Service
+      shell: kubectl get svc -A
+      environment:
+        KUBECONFIG: "{{ kubeconfig_path }}"
