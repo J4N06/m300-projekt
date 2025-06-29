@@ -29,6 +29,9 @@
         curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
       args:
         creates: /usr/local/bin/helm
+    - name: 🚀 Helm Uninstall (Cleanup)
+      ansible.builtin.shell: |
+        helm uninstall mymedusa || true
 
     - name: 🚀 Helm Upgrade/Install Medusa
       ansible.builtin.shell: |
