@@ -1,9 +1,7 @@
 name: Deploy Shop with Helm
 
 on:
-  push:
-    branches:
-      - main  # oder dein Deploy-Branch
+  workflow_dispatch:
 
 jobs:
   deploy:
@@ -16,11 +14,6 @@ jobs:
     - name: Checkout Code
       uses: actions/checkout@v3
 
-    - name: Setup SSH for Git Clone
-      uses: webfactory/ssh-agent@v0.8.0
-      with:
-        ssh-private-key: ${{ secrets.K8S_SSH_PRIVATE_KEY }}
-
     - name: Write kubeconfig
       run: |
         echo "${{ secrets.KUBECONFIG_CONTENT }}" > kubeconfig
@@ -30,9 +23,9 @@ jobs:
       with:
         version: v3.13.0
 
-    - name: Clone Saleor Helm Chart
+    - name: Clone Saleor Helm Chart (HTTPS)
       run: |
-        git clone git@github.com:saleor/helm-charts.git
+        git clone https://github.com/saleor/helm-charts.git
 
     - name: Copy your custom values.yaml
       run: |
