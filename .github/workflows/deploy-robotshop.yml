@@ -24,11 +24,11 @@ jobs:
 
       - name: Setup kubeconfig from base64 secret
         run: |
-            mkdir -p ~/.kube
-            echo "${{ secrets.KUBECONFIG_CONTENT }}" | base64 --decode > ~/.kube/config
-
+          mkdir -p ~/.kube
+          echo "${{ secrets.KUBECONFIG_CONTENT }}" | base64 --decode > ~/.kube/config
+          chmod 600 ~/.kube/config
 
       - name: Run Ansible Playbook to deploy Robot Shop
         run: ansible-playbook ansible/deploy_robotshop.yaml -i ansible/inventory.ini
         env:
-          KUBECONFIG: ~/.kube/config
+          KUBECONFIG: ${{ runner.home }}/.kube/config
