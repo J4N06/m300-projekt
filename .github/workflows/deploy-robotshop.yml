@@ -1,18 +1,36 @@
-name: Deploy Robot Shop
+name: Deploy Robot Shop Only
 
 on:
   workflow_dispatch:
 
 jobs:
-  deploy:
+  deploy_robotshop:
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
 
-      - name: Install Ansible
-        run: sudo apt-get update && sudo apt-get install -y ansible
+      - name: Install Ansible & Collections
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ansible python3-pip
+          python3 -m pip install --upgrade pip
+          python3 -m pip install kubernetes
+          ansible-galaxy collection install kubernetes.core community.kubernetes
 
-      - name: Run Ansible Playbook
+      - name: Setup kubeconfig
+        run: |
+          mkdir -p ~/.kube
+          echo "${{ secrets.KUBECONFIG_CONTENT }}" | base64 --decode > ~/.kube/config
+          chmod 600 ~/.kube/config
+
+      - name: Test Kubernetes API connectivity
+        run: kubectl get nodes
+        env:
+          KUBECONFIG: ~/.kube/config
+
+      - name: Deploy Robot Shop with Ansible
         run: ansible-playbook ansible/deploy_robotshop.yaml -i ansible/inventory.ini
+        env:
+          KUBECONFIG: ~/.kube/config
