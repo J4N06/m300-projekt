@@ -1,0 +1,19 @@
+# Redis ohne Persistenz, da Storage ggf. nicht provisioniert ist
+redis:
+  persistence:
+    enabled: false
+
+# Angepasste Readiness Probe Pfade für ratings & shipping
+ratings:
+  readinessProbe:
+    path: /
+
+shipping:
+  readinessProbe:
+    path: /
+    
+# Web-Frontend Settings (optional anpassen)
+web:
+  replicaCount: 1
+
+# Weitere globale Einstellungen hier nach Bedarf

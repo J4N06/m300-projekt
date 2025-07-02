@@ -96,7 +96,6 @@ resource "aws_security_group" "k8s_sg" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
-
   ingress {
     description = "Kubelet API"
     from_port   = 10250
@@ -119,7 +118,37 @@ resource "aws_security_group" "k8s_sg" {
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
-
+  ingress {
+      description = "Allow DNS TCP 53"
+      from_port   = 53
+      to_port     = 53
+      protocol    = "tcp"
+      cidr_blocks = ["10.0.0.0/16"]
+    }
+  # Optional: Erlaube UDP/TCP 53 für DNS (CoreDNS)
+  ingress {
+    description = "Allow DNS UDP 53"
+    from_port   = 53
+    to_port     = 53
+    protocol    = "udp"
+    cidr_blocks = ["10.0.0.0/16"]
+  }
+  # Erlaubt Calico IP-in-IP Tunnel (Protocol 4)
+  ingress {
+    description = "Allow Calico IP-in-IP (Protocol 4)"
+    from_port   = 0
+    to_port     = 0
+    protocol    = "4"
+    cidr_blocks = ["10.0.0.0/16"]
+  }
+  ingress {
+    description = "Allow Calico BGP TCP 179"
+    from_port   = 179
+    to_port     = 179
+    protocol    = "tcp"
+    # Am besten nicht 0.0.0.0/0, sondern dein interner CIDR oder die eigene SG
+    cidr_blocks = ["10.0.0.0/16"]
+  }
   egress {
     from_port   = 0
     to_port     = 0

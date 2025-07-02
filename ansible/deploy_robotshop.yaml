@@ -1,0 +1,26 @@
+---
+- name: Deploy Stan's Robot Shop with Helm on Kubernetes
+  hosts: localhost
+  gather_facts: no
+
+  vars:
+    namespace: three-tier
+    chart_path: ./charts/robotshop
+    values_file: ./charts/robotshop/values.yaml
+
+  tasks:
+    - name: Ensure Kubernetes namespace exists
+      kubernetes.core.k8s:
+        api_version: v1
+        kind: Namespace
+        name: "{{ namespace }}"
+        state: present
+
+    - name: Deploy or upgrade Robot Shop Helm chart
+      community.kubernetes.helm:
+        name: three-tier-app
+        chart_ref: "{{ chart_path }}"
+        release_namespace: "{{ namespace }}"
+        create_namespace: false
+        values_file: "{{ values_file }}"
+        state: present
