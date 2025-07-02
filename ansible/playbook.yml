@@ -15,7 +15,7 @@
   become: true
   roles:
     - worker
-- name: Three-Tier-Demo von GitHub klonen und deployen (angepasst)
+- name: Three-Tier-Demo via Helm von GitHub klonen und deployen (angepasst)
   hosts: master
   become: true
   tasks:
@@ -25,6 +25,12 @@
         state: present
         update_cache: yes
 
+    - name: Helm installieren (falls nicht vorhanden)
+      shell: |
+        curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+      args:
+        creates: /usr/local/bin/helm
+
     - name: Three-Tier-Demo Repo klonen
       become_user: ubuntu
       git:
@@ -32,17 +38,26 @@
         dest: /home/ubuntu/three-tier-architecture-demo
         version: master
 
-    - name: PersistentVolumes und PVCs entfernen und Healthchecks patchen
+    - name: Healthchecks auf '/' patchen in allen Templates
       become_user: ubuntu
       shell: |
-        cd /home/ubuntu/three-tier-architecture-demo/kubernetes-manifests
-        sed -i '/persistentVolumeClaim:/,+2d' *.yaml
-        sed -i '/volumeMounts:/,+2d' *.yaml
-        sed -i '/volumes:/,+2d' *.yaml
-        sed -i 's|path: /health|path: /|g' *.yaml
+        find /home/ubuntu/three-tier-architecture-demo/K8s/helm/templates -type f -name "*.yaml" -exec sed -i 's|path: /health|path: /|g' {} +
 
-    - name: Three-Tier Demo in Kubernetes deployen
+    - name: PersistentVolumeClaims & StatefulSets aus Templates entfernen
       become_user: ubuntu
       shell: |
-        kubectl apply -f /home/ubuntu/three-tier-architecture-demo/kubernetes-manifests
+        # Beispiel: Entferne alle Zeilen mit persistentVolumeClaim
+        find /home/ubuntu/three-tier-architecture-demo/K8s/helm/templates -type f -name "*.yaml" -exec sed -i '/persistentVolumeClaim:/,+2d' {} +
+        # Optional: Redis-StatefulSet in Deployment ändern oder ganz entfernen, je nach App-Logik
 
+    - name: Redis StatefulSet Template entfernen (wenn du keine StatefullSets willst)
+      become_user: ubuntu
+      file:
+        path: /home/ubuntu/three-tier-architecture-demo/K8s/helm/templates/redis-statefulset.yaml
+        state: absent
+
+    - name: Helm Chart deployen (mit lokalen Values, z.B. ohne Storage)
+      become_user: ubuntu
+      shell: |
+        cd /home/ubuntu/three-tier-architecture-demo/K8s/helm
+        helm upgrade --install robot-shop . --set redis.enabled=false --set mongodb.persistence.enabled=false --set mysql.persistence.enabled=false
