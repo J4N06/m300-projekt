@@ -22,10 +22,11 @@ jobs:
           pip install ansible kubernetes
           ansible-galaxy collection install kubernetes.core community.kubernetes
 
-      - name: Setup kubeconfig file
+      - name: Setup kubeconfig from base64 secret
         run: |
-          mkdir -p ~/.kube
-          echo "${{ secrets.KUBECONFIG_CONTENT }}" > ~/.kube/config
+            mkdir -p ~/.kube
+            echo "${{ secrets.KUBECONFIG_BASE }}" | base64 --decode > ~/.kube/config
+
 
       - name: Run Ansible Playbook to deploy Robot Shop
         run: ansible-playbook ansible/deploy_robotshop.yaml -i ansible/inventory.ini
