@@ -2,8 +2,10 @@
 - name: Deploy Stan's Robot Shop with Helm on Kubernetes
   hosts: localhost
   gather_facts: no
+
   vars:
     namespace: three-tier
+    release_name: three-tier-app
     chart_path: ./charts/robotshop
     values_file: ./charts/robotshop/values.yaml
 
@@ -14,16 +16,12 @@
         kind: Namespace
         name: "{{ namespace }}"
         state: present
-      environment:
-        KUBECONFIG: "{{ lookup('env', 'KUBECONFIG') }}"
 
     - name: Deploy or upgrade Robot Shop Helm chart
       community.kubernetes.helm:
-        name: three-tier-app
+        name: "{{ release_name }}"
         chart_ref: "{{ chart_path }}"
         release_namespace: "{{ namespace }}"
         create_namespace: false
         values_file: "{{ values_file }}"
         state: present
-      environment:
-        KUBECONFIG: "{{ lookup('env', 'KUBECONFIG') }}"
