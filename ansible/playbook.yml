@@ -15,3 +15,33 @@
   become: true
   roles:
     - worker
+- name: Three-Tier-Demo von GitHub klonen und deployen (angepasst)
+  hosts: master
+  become: true
+  tasks:
+    - name: Git installieren (falls nicht vorhanden)
+      apt:
+        name: git
+        state: present
+        update_cache: yes
+
+    - name: Three-Tier-Demo Repo klonen
+      become_user: ubuntu
+      git:
+        repo: https://github.com/iam-veeramalla/three-tier-architecture-demo.git
+        dest: /home/ubuntu/three-tier-architecture-demo
+        version: main
+
+    - name: PersistentVolumes und PVCs entfernen und Healthchecks patchen
+      become_user: ubuntu
+      shell: |
+        cd /home/ubuntu/three-tier-architecture-demo/k8s-manifests
+        sed -i '/persistentVolumeClaim:/,+2d' *.yaml
+        sed -i '/volumeMounts:/,+2d' *.yaml
+        sed -i '/volumes:/,+2d' *.yaml
+        sed -i 's|path: /health|path: /|g' *.yaml
+
+    - name: Three-Tier Demo in Kubernetes deployen
+      become_user: ubuntu
+      shell: |
+        kubectl apply -f /home/ubuntu/three-tier-architecture-demo/k8s-manifests
