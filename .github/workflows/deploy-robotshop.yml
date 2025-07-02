@@ -19,11 +19,15 @@ jobs:
           python3 -m pip install kubernetes
           ansible-galaxy collection install kubernetes.core community.kubernetes
 
-      - name: Setup kubeconfig securely with absolute path
+      - name: Setup kubeconfig with public IP substitution
         run: |
           mkdir -p /home/runner/.kube
           echo "${{ secrets.KUBECONFIG_CONTENT }}" | base64 --decode > /home/runner/.kube/config
+          sed -i "s/K8S_MASTER_PUBLIC_IP/${{ secrets.K8S_MASTER_PUBLIC_IP }}/g" /home/runner/.kube/config
           chmod 600 /home/runner/.kube/config
+
+      - name: Debug kubeconfig content (optional)
+        run: head -20 /home/runner/.kube/config
 
       - name: Test Kubernetes connection
         run: kubectl get nodes
