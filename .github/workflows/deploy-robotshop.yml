@@ -24,14 +24,15 @@ jobs:
 
       - name: Setup kubeconfig file
         run: |
-          mkdir -p ~/.kube
-          printf '%s' "${{ secrets.KUBECONFIG_CONTENT }}" > ~/.kube/config
-          chmod 600 ~/.kube/config
+            mkdir -p /home/runner/.kube
+            printf '%s' "${{ secrets.KUBECONFIG_CONTENT }}" > /home/runner/.kube/config
+            chmod 600 /home/runner/.kube/config
 
       - name: Test Kubernetes API connectivity
         run: kubectl get nodes
         env:
-          KUBECONFIG: ${{ runner.home }}/.kube/config
+            KUBECONFIG: /home/runner/.kube/config
+
 
       - name: Run Ansible Playbook to deploy Robot Shop
         run: ansible-playbook ansible/deploy_robotshop.yaml -i ansible/inventory.ini
