@@ -16,11 +16,18 @@ jobs:
 
       - name: Set up Python & Helm
         run: |
-          sudo apt-get update && sudo apt-get install -y helm
-          curl -sSL https://bootstrap.pypa.io/get-pip.py | python3
-          pip3 install --upgrade pip
-          pip3 install kubernetes ansible
-          ansible-galaxy collection install kubernetes.core community.kubernetes
+            # Helm installieren
+            curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+
+            # Python und Pip installieren
+            sudo apt-get update
+            sudo apt-get install -y python3 python3-pip
+
+            # Python Pakete installieren
+            pip3 install --upgrade pip
+            pip3 install kubernetes ansible
+            ansible-galaxy collection install kubernetes.core community.kubernetes
+
 
       - name: Setup kubeconfig securely
         run: |
