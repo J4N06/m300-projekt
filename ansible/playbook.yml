@@ -30,7 +30,7 @@
       git:
         repo: https://github.com/iam-veeramalla/three-tier-architecture-demo.git
         dest: /home/ubuntu/three-tier-architecture-demo
-        version: main
+        version: master
 
     - name: PersistentVolumes und PVCs entfernen und Healthchecks patchen
       become_user: ubuntu
