@@ -35,7 +35,7 @@
     - name: PersistentVolumes und PVCs entfernen und Healthchecks patchen
       become_user: ubuntu
       shell: |
-        cd /home/ubuntu/three-tier-architecture-demo/k8s-manifests
+        cd /home/ubuntu/three-tier-architecture-demo/kubernetes-manifests
         sed -i '/persistentVolumeClaim:/,+2d' *.yaml
         sed -i '/volumeMounts:/,+2d' *.yaml
         sed -i '/volumes:/,+2d' *.yaml
@@ -44,4 +44,5 @@
     - name: Three-Tier Demo in Kubernetes deployen
       become_user: ubuntu
       shell: |
-        kubectl apply -f /home/ubuntu/three-tier-architecture-demo/k8s-manifests
+        kubectl apply -f /home/ubuntu/three-tier-architecture-demo/kubernetes-manifests
+
