@@ -1,6 +1,6 @@
 ---
-- name: Deploy Stan's Robot Shop with Helm on Kubernetes
-  hosts: localhost
+- name: Deploy Stan's Robot Shop via Helm
+  hosts: robotshop
   gather_facts: no
 
   vars:
@@ -17,7 +17,7 @@
         name: "{{ namespace }}"
         state: present
 
-    - name: Deploy or upgrade Robot Shop Helm chart
+    - name: Deploy Robot Shop via Helm
       community.kubernetes.helm:
         name: "{{ release_name }}"
         chart_ref: "{{ chart_path }}"
