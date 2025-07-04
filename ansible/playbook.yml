@@ -61,3 +61,51 @@
       shell: |
         cd /home/ubuntu/three-tier-architecture-demo/K8s/helm
         helm upgrade --install robot-shop . --set redis.enabled=false --set mongodb.persistence.enabled=false --set mysql.persistence.enabled=false
+- name: Kubernetes Dashboard zur Statusanzeige mit Flask einrichten
+  hosts: master
+  become: true
+  tasks:
+    - name: Python3 und pip installieren
+      apt:
+        name:
+          - python3
+          - python3-pip
+        state: present
+        update_cache: yes
+
+    - name: Flask installieren
+      pip:
+        name: flask
+
+    - name: App-Verzeichnis anlegen
+      file:
+        path: /home/ubuntu/k8s_web
+        state: directory
+        owner: ubuntu
+        group: ubuntu
+        mode: "0755"
+
+    - name: app.py bereitstellen
+      copy:
+        src: files/app.py
+        dest: /home/ubuntu/k8s_web/app.py
+        owner: ubuntu
+        group: ubuntu
+        mode: "0644"
+
+    - name: Systemd-Service-File bereitstellen
+      copy:
+        src: files/k8sweb.service
+        dest: /etc/systemd/system/k8sweb.service
+        owner: root
+        group: root
+        mode: "0644"
+
+    - name: Systemd neu laden
+      command: systemctl daemon-reload
+
+    - name: Flask Dashboard aktivieren und starten
+      systemd:
+        name: k8sweb
+        enabled: yes
+        state: restarted
