@@ -72,6 +72,13 @@ resource "aws_security_group" "k8s_sg" {
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
+  ingress {
+    description = "Dashboard"
+    from_port   = 8080
+    to_port     = 8080
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
 
   ingress {
     description = "Kubernetes API Server"
@@ -119,12 +126,12 @@ resource "aws_security_group" "k8s_sg" {
     cidr_blocks = ["0.0.0.0/0"]
   }
   ingress {
-      description = "Allow DNS TCP 53"
-      from_port   = 53
-      to_port     = 53
-      protocol    = "tcp"
-      cidr_blocks = ["10.0.0.0/16"]
-    }
+    description = "Allow DNS TCP 53"
+    from_port   = 53
+    to_port     = 53
+    protocol    = "tcp"
+    cidr_blocks = ["10.0.0.0/16"]
+  }
   # Optional: Erlaube UDP/TCP 53 für DNS (CoreDNS)
   ingress {
     description = "Allow DNS UDP 53"
