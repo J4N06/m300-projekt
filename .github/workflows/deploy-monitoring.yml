@@ -1,10 +1,10 @@
-name: Deploy Monitoring Cluster
+name: Deploy Monitoring Setup
 
 on:
+  workflow_dispatch:
   push:
     branches:
       - main
-  workflow_dispatch:
 
 jobs:
   deploy:
@@ -16,22 +16,26 @@ jobs:
 
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v3
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
 
       - name: Terraform Init
         run: terraform init
+        working-directory: terraform
 
       - name: Terraform Validate
         run: terraform validate
+        working-directory: terraform
 
       - name: Terraform Plan
         run: terraform plan
+        working-directory: terraform
 
       - name: Terraform Apply
         run: terraform apply -auto-approve
+        working-directory: terraform
 
       - name: Get Terraform Outputs
         id: tf-outputs
@@ -39,10 +43,11 @@ jobs:
           echo "MASTER_DNS=$(terraform output -raw master_dns)" >> $GITHUB_ENV
           echo "WORKER1_DNS=$(terraform output -raw worker1_dns)" >> $GITHUB_ENV
           echo "WORKER2_DNS=$(terraform output -raw worker2_dns)" >> $GITHUB_ENV
+        working-directory: terraform
 
       - name: Generate Inventory File
         run: |
-          cat <<EOF > inventory.ini
+          cat <<EOF > ansible/inventory.ini
           [master]
           $MASTER_DNS ansible_user=ubuntu
 
@@ -61,8 +66,8 @@ jobs:
       - name: Add SSH Private Key
         run: |
           mkdir -p ~/.ssh
-          echo "${{ secrets.K8S_SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
 
       - name: Run Ansible Playbook
-        run: ansible-playbook -i inventory.ini playbook.yml
+        run: ansible-playbook -i ansible/inventory.ini ansible/playbook.yml
