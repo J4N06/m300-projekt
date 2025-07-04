@@ -1,0 +1,74 @@
+- hosts: master
+  become: true
+  tasks:
+    - name: Install Docker & Docker Compose
+      apt:
+        name: ["docker.io", "docker-compose"]
+        state: present
+        update_cache: yes
+
+    - name: Copy Docker Compose file
+      copy:
+        src: files/docker-compose.yml
+        dest: /home/ubuntu/docker-compose.yml
+
+    - name: Copy Prometheus config
+      copy:
+        src: files/prometheus.yml
+        dest: /home/ubuntu/prometheus.yml
+
+    - name: Copy Loki config
+      copy:
+        src: files/loki-config.yaml
+        dest: /home/ubuntu/loki-config.yaml
+
+    - name: Start monitoring stack
+      shell: |
+        docker-compose -f /home/ubuntu/docker-compose.yml up -d
+
+    - name: Install Node Exporter on Master
+      shell: |
+        docker run -d --name node_exporter \
+          -p 9100:9100 \
+          prom/node-exporter:latest
+
+    - name: Install Promtail on Master
+      copy:
+        src: files/promtail-config.yml
+        dest: /home/ubuntu/promtail-config.yml
+
+    - name: Run Promtail on Master
+      shell: |
+        docker run -d --name promtail \
+          -v /var/log:/var/log \
+          -v /home/ubuntu/promtail-config.yml:/etc/promtail/config.yml \
+          grafana/promtail:latest \
+          -config.file=/etc/promtail/config.yml
+
+- hosts: worker
+  become: true
+  tasks:
+    - name: Install Docker
+      apt:
+        name: docker.io
+        state: present
+        update_cache: yes
+
+    - name: Install Node Exporter on Worker
+      shell: |
+        docker run -d --name node_exporter \
+          -p 9100:9100 \
+          prom/node-exporter:latest
+
+    - name: Copy Promtail config
+      copy:
+        src: files/promtail-config.yml
+        dest: /home/ubuntu/promtail-config.yml
+
+    - name: Run Promtail on Worker
+      shell: |
+        docker run -d --name promtail \
+          -v /var/log:/var/log \
+          -v /home/ubuntu/promtail-config.yml:/etc/promtail/config.yml \
+          grafana/promtail:latest \
+          -config.file=/etc/promtail/config.yml
