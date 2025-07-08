@@ -37,8 +37,11 @@ M300-PROJEKT/
 ```
 
 ## 🚀 Projektziele
-✅ Automatisierte Bereitstellung einer Cloud-Infrastruktur mit Terraform
-✅ Konfiguration von Maschinen mit Ansible (Rollen für Master/Worker)
-✅ Bereitstellung von Kubernetes-Ressourcen inkl. Helm-Charts
-✅ CI/CD Workflow über GitHub Actions (.github/workflows/deploy.yml)
-✅ Visuelle Dokumentation (siehe schema.png)
+
+- ✅ **Automatisierte Bereitstellung** einer Cloud-Infrastruktur mit Terraform  
+- ✅ **Konfiguration** von Maschinen mit Ansible (Rollen für Master/Worker)  
+- ✅ Bereitstellung von Kubernetes-Ressourcen inkl. Helm-Charts *(optional, falls genutzt)*  
+- ✅ **CI/CD Workflow** über GitHub Actions (`.github/workflows/deploy.yml`)  
+- ✅ **Visuelle Dokumentation** (siehe `schema.png`)  
+  
+Die Dokumentation findet man unter dem folgenden 
