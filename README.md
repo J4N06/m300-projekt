@@ -1,13 +1,14 @@
 📦 M300-PROJEKT
 🗂️ Projektstruktur
 In diesem Projekt, werden mit hilfe von Terraform und Ansible drei EC2 Instanzen erstellt auf welche anschliessend Kubernetes installiert wird, damit der Robot Shop dort läuft.
-
+```plaintext
 M300-PROJEKT/
 │
 ├── terraform/           # Terraform-Konfiguration für die Infrastruktur
 │   ├── main.tf
 │   ├── outputs.tf
 │   ├── variables.tf
+│   ├── ssh-key/
 │
 ├── ansible/             # Ansible Playbooks für die Serverkonfiguration
 │   ├── inventory.ini
@@ -23,7 +24,7 @@ M300-PROJEKT/
 ├── .github/workflows/   # CI/CD Workflows
 │   └── deploy.yml
 │
-├── _old/                # Alte Ideen, Prototypen oder unfertige Projekte
+├── _old/                # Alte Ideen und unfertige Projekte
 │   ├── charts/
 │   ├── dashboards/
 │   ├── helm/
@@ -33,7 +34,7 @@ M300-PROJEKT/
 ├── documentation.md     # Projektdokumentation
 ├── schema.png           # Diagramm der Infrastruktur
 └── README.md
-
+```
 
 🚀 Projektziele
 ✅ Automatisierte Bereitstellung einer Cloud-Infrastruktur mit Terraform
