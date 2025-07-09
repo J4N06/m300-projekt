@@ -1,13 +1,13 @@
-from flask import Flask, render_template_string
+from flask import Flask, render_template_string, request
 import subprocess
 import json
-
+ 
 app = Flask(__name__)
-
+ 
 @app.route("/")
 def index():
+    containers = []
     try:
-        # Pods im JSON-Format abfragen
         result = subprocess.run(
             ["kubectl", "get", "pods", "-o", "json"],
             capture_output=True,
@@ -15,8 +15,7 @@ def index():
             check=True
         )
         pod_data = json.loads(result.stdout)
-        
-        containers = []
+ 
         for item in pod_data["items"]:
             pod_name = item["metadata"]["name"]
             namespace = item["metadata"]["namespace"]
@@ -34,66 +33,127 @@ def index():
                     ),
                 })
     except Exception as e:
-        containers = []
         print(e)
-
+ 
     html = """
-    <!doctype html>
-    <html>
-    <head>
-      <meta charset="utf-8">
-      <title>Kubernetes Container Status</title>
-      <meta http-equiv="refresh" content="30">
-      <link
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Kubernetes Container Dashboard</title>
+<meta http-equiv="refresh" content="30">
+<link
         href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
         rel="stylesheet">
-    </head>
-    <body class="p-4 bg-light">
-      <div class="container">
-        <h1 class="mb-4">Kubernetes Container Status (pro Container)</h1>
-        <table class="table table-striped table-bordered">
-          <thead class="table-dark">
-            <tr>
-              <th>Namespace</th>
-              <th>Pod</th>
-              <th>Container</th>
-              <th>Status</th>
-              <th>Ready</th>
-              <th>Restart Count</th>
-            </tr>
-          </thead>
-          <tbody>
+</head>
+<body class="p-4 bg-light">
+<div class="container">
+<h1 class="mb-4">Kubernetes Container Dashboard</h1>
+<table class="table table-striped table-bordered">
+<thead class="table-dark">
+<tr>
+<th>Namespace</th>
+<th>Pod</th>
+<th>Container</th>
+<th>Status</th>
+<th>Ready</th>
+<th>Restart Count</th>
+<th>Logs</th>
+</tr>
+</thead>
+<tbody>
             {% for c in containers %}
-              <tr>
-                <td>{{ c.namespace }}</td>
-                <td>{{ c.pod_name }}</td>
-                <td>{{ c.container_name }}</td>
-                <td>
+<tr>
+<td>{{ c.namespace }}</td>
+<td>{{ c.pod_name }}</td>
+<td>{{ c.container_name }}</td>
+<td>
                   {% if c.state == "running" %}
-                    <span class="badge bg-success">{{ c.state }}</span>
+<span class="badge bg-success">{{ c.state }}</span>
                   {% else %}
-                    <span class="badge bg-danger">{{ c.state }}</span>
+<span class="badge bg-danger">{{ c.state }}</span>
                   {% endif %}
-                </td>
-                <td>
+</td>
+<td>
                   {% if c.ready %}
-                    <span class="badge bg-success">true</span>
+<span class="badge bg-success">true</span>
                   {% else %}
-                    <span class="badge bg-danger">false</span>
+<span class="badge bg-danger">false</span>
                   {% endif %}
-                </td>
-                <td>{{ c.restart_count }}</td>
-              </tr>
+</td>
+<td>{{ c.restart_count }}</td>
+<td>
+<a class="btn btn-sm btn-primary" href="/logs?pod={{ c.pod_name }}&container={{ c.container_name }}">View Logs</a>
+</td>
+</tr>
             {% endfor %}
-          </tbody>
-        </table>
-        <p class="text-muted">Automatische Aktualisierung alle 30 Sekunden</p>
-      </div>
-    </body>
-    </html>
+</tbody>
+</table>
+<p class="text-muted mt-4">Automatische Aktualisierung alle 30 Sekunden</p>
+</div>
+</body>
+</html>
     """
-
     return render_template_string(html, containers=containers)
-
+ 
+@app.route("/logs")
+def logs():
+    pod = request.args.get("pod")
+    container = request.args.get("container")
+    if not pod or not container:
+        return "Missing pod/container parameters", 400
+ 
+    try:
+        result = subprocess.run(
+            ["kubectl", "logs", pod, "-c", container, "--tail=100"],
+            capture_output=True,
+            text=True,
+            check=True
+        )
+        raw_logs = result.stdout
+    except Exception as e:
+        raw_logs = f"Error retrieving logs: {e}"
+ 
+    formatted_logs = (
+        raw_logs
+        .replace("ERROR", "<span style='color:red;font-weight:bold;'>ERROR</span>")
+        .replace("Error", "<span style='color:red;font-weight:bold;'>Error</span>")
+        .replace("WARNING", "<span style='color:orange;font-weight:bold;'>WARNING</span>")
+        .replace("Warning", "<span style='color:orange;font-weight:bold;'>Warning</span>")
+    )
+ 
+    html = f"""
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Logs for {pod}/{container}</title>
+<meta http-equiv="refresh" content="10">
+<link
+        href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+        rel="stylesheet">
+<style>
+        pre {{
+          background: #f4f4f4;
+          padding: 1em;
+          border: 1px solid #ccc;
+          max-height: 500px;
+          overflow-y: scroll;
+          white-space: pre-wrap;
+        }}
+</style>
+</head>
+<body class="p-4 bg-light">
+<div class="container">
+<h2>Logs für <code>{pod}/{container}</code></h2>
+<pre>{formatted_logs}</pre>
+<a class="btn btn-secondary mt-3" href="/">Zurück</a>
+<p class="text-muted mt-2">Automatische Aktualisierung alle 10 Sekunden</p>
+</div>
+</body>
+</html>
+    """
+    return html
+ 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8080)

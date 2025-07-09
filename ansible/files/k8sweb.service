@@ -1,12 +1,12 @@
-[Unit]
+Unit]
 Description=Kubernetes Container Status Dashboard
 After=network.target
-
+ 
 [Service]
 User=ubuntu
 WorkingDirectory=/home/ubuntu/k8s_web
 ExecStart=/usr/bin/python3 /home/ubuntu/k8s_web/app.py
 Restart=always
-
+ 
 [Install]
 WantedBy=multi-user.target
