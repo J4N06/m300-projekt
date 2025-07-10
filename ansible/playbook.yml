@@ -109,16 +109,3 @@
         name: k8sweb
         enabled: yes
         state: restarted
-- hosts: monitoring
-  become: true
-  roles:
-    - prometheus
-    - grafana
-    - node_exporter
-
-- hosts: logging
-  become: true
-  roles:
-    - elasticsearch
-    - kibana
-    - filebeat
