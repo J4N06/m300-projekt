@@ -22,7 +22,7 @@
     - [5.3 AWS Credentials](#53-aws-credentials)
     - [5.4 GitHub Secrets](#54-github-secrets)
     - [5.5 Terraform GitHub Actions Workflow](#55-terraform-github-actions-workflow)
-      - [📂 Datei: `.github/workflows/terraform-deploy.yml`](#-datei-githubworkflowsterraform-deployyml)
+      - [Datei: `.github/workflows/terraform-deploy.yml`](#datei-githubworkflowsterraform-deployyml)
     - [5.6 Ansible Playbook Struktur](#56-ansible-playbook-struktur)
       - [Rollen:](#rollen)
       - [Zusätzliche Tasks:](#zusätzliche-tasks)
@@ -158,7 +158,7 @@ Es verwendet:
 Du brauchst:
 - `AWS_ACCESS_KEY_ID`
 - `AWS_SECRET_ACCESS_KEY`
-- Optional: `AWS_SESSION_TOKEN` (nur falls du MFA verwendest)
+- Optional: `AWS_SESSION_TOKEN` bei einem AWS learner Lab
 
 Speichere diese **sicher** in den GitHub Repository Secrets:
 
@@ -170,7 +170,7 @@ Speichere diese **sicher** in den GitHub Repository Secrets:
 | ----------------------- | ---------------------------------- |
 | `AWS_ACCESS_KEY_ID`     | Dein AWS Access Key                |
 | `AWS_SECRET_ACCESS_KEY` | Dein AWS Secret Key                |
-| `AWS_SESSION_TOKEN`     | (optional) für MFA Sessions        |
+| `AWS_SESSION_TOKEN`     | (optional) bei einem Learner Lab   |
 | `K8S_SSH_PUBLIC_KEY`    | Öffentlicher Schlüssel für die EC2 |
 | `K8S_SSH_PRIVATE_KEY`   | Privater Schlüssel für SSH-Zugriff |
 
@@ -178,7 +178,7 @@ Speichere diese **sicher** in den GitHub Repository Secrets:
 
 ### 5.5 Terraform GitHub Actions Workflow
 
-#### 📂 Datei: `.github/workflows/terraform-deploy.yml`
+####  Datei: `.github/workflows/terraform-deploy.yml`
 
 Der Workflow macht folgendes:
 1. **Repository auschecken**
@@ -186,7 +186,7 @@ Der Workflow macht folgendes:
 3. AWS Credentials konfigurieren
 4. `terraform init`, `terraform validate` und `terraform apply` ausführen
 5. Terraform Outputs (Public IPs) abrufen
-6. SSH Public Key auf die Instanzen kopieren (falls noch nicht vorhanden)
+6. SSH Public Key auf die Instanzen kopieren
 7. Ansible Inventory automatisch generieren
 8. Ansible installieren und ausführen:
    - Kubernetes installieren
@@ -195,14 +195,14 @@ Der Workflow macht folgendes:
    - Kubernetes Dashboard mit Flask bereitstellen
 9. `kubeconfig` vom Master holen und als Base64-Artifact speichern
 
-✅ **Wichtig:** Der Workflow wartet per Loop auf SSH-Erreichbarkeit jeder Node.
+**Wichtig:** Der Workflow wartet per Loop auf SSH-Erreichbarkeit jeder Node.
 
 ---
 
 ### 5.6 Ansible Playbook Struktur
 
 #### Rollen:
-- **`common`**: Gemeinsames Setup auf allen Nodes (z. B. Docker, Pakete)
+- **`common`**: Gemeinsames Setup auf allen Nodes
 - **`master`**: Kubernetes Master initialisieren
 - **`worker`**: Worker Nodes joinen lassen
 
@@ -210,7 +210,7 @@ Der Workflow macht folgendes:
 #### **Three-Tier-Demo**
 - Klonen eines öffentlichen GitHub Repos (`three-tier-architecture-demo`)
 - Healthchecks auf `/` anpassen
-- StatefulSets & PVCs entfernen (optional)
+- StatefulSets & PVCs entfernen
 - Helm Chart installieren
 
 #### **Kubernetes Dashboard (Flask)**
