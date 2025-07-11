@@ -29,6 +29,26 @@
       - [**Three-Tier-Demo**](#three-tier-demo)
       - [**Kubernetes Dashboard (Flask)**](#kubernetes-dashboard-flask)
     - [5.7 Ablauf der Provisionierung](#57-ablauf-der-provisionierung)
+  - [6 Monitoring Doku](#6-monitoring-doku)
+    - [6.1 Überblick](#61-überblick)
+    - [6.2 Aufbau](#62-aufbau)
+    - [6.3 systemd-Dienst](#63-systemd-dienst)
+    - [6.4 Alerting via Discord Webhook](#64-alerting-via-discord-webhook)
+    - [6.5 ✅ Was funktioniert:](#65--was-funktioniert)
+    - [6.6 ❌ Was funktioniert nicht:](#66--was-funktioniert-nicht)
+    - [6.7 Status:](#67-status)
+    - [6.8 Fazit](#68-fazit)
+  - [7 Bünzli Shop (Projekt abbgebrochen)](#7-bünzli-shop-projekt-abbgebrochen)
+    - [7.1 Ziel](#71-ziel)
+    - [7.2 Projektstruktur](#72-projektstruktur)
+    - [7.3 So sollte es funktionieren](#73-so-sollte-es-funktionieren)
+    - [7.4 Was ich erfolgreich umgesetzt habe](#74-was-ich-erfolgreich-umgesetzt-habe)
+    - [7.5 API-Tests](#75-api-tests)
+    - [7.6 Mein Testverlauf](#76-mein-testverlauf)
+    - [7.7 Probleme \& Ursachen](#77-probleme--ursachen)
+    - [7.8 Beispiel-Fehler](#78-beispiel-fehler)
+    - [7.9 Was ich daraus gelernt habe](#79-was-ich-daraus-gelernt-habe)
+    - [7.10 Best Practices für mein nächstes Mal](#710-best-practices-für-mein-nächstes-mal)
 
 ---
 
@@ -50,7 +70,7 @@ Diese Schichten ermöglichen, dass einzelne Dienste unabhängig voneinander entw
 | `main.tf`, `outputs.tf`, `variables.tf` | Terraform-Module: Definieren Cloud-Ressourcen, Variablen & Outputs.               |
 | `inventory.ini`                         | Host- und Verbindungsinformationen für Ansible.                                   |
 | `playbook.yml`, `main.yml`              | Ansible-Playbooks: Automatisieren die Kubernetes-Installation und -Konfiguration. |
-| `deploy.yml`, `k8sweb.service`          | Kubernetes-Manifest-Dateien: Deployment der Anwendungen & LoadBalancer-Services.  |
+| `deploy.yml`                            | Kubernetes-Manifest-Dateien: Deployment der Anwendungen                           |
 
 Die Beziehungen sind klar: Zuerst wird Infrastruktur bereitgestellt, dann Kubernetes konfiguriert, dann die Anwendung deployed.
 
@@ -101,8 +121,6 @@ Als Beispielanwendung deploye ich den **Robot Shop**, der aus mehreren Microserv
 
 - **Microservices**: Frontend, Catalogue, Cart, Orders, Payments, Database.
 - **Deployment**: Alle Services werden über Kubernetes Deployments & Services bereitgestellt.
-- **Externe Erreichbarkeit**: Das Frontend ist über einen LoadBalancer (`k8sweb.service`) zugänglich.
-
 ---
 
 ### 4.2 Schnittstellen & APIs
@@ -230,5 +248,236 @@ Der Workflow macht folgendes:
 | Ansible        | Installiert Kubernetes, Helm, Demo-App |
 | Helm           | Deployt die App                        |
 | Flask          | Stellt Dashboard bereit                |
+
+---
+## 6 Monitoring Doku
+
+### 6.1 Überblick
+Dieses Monitoring-System zeigt den Status aller Kubernetes-Container in einer übersichtlichen Web-Oberfläche an.  
+Die Anwendung wurde mit Flask realisiert und läuft dauerhaft über systemd.  
+Die Daten werden alle *30 Sekunden automatisch aktualisiert*.  
+Zusätzlich wurde ein Alerting-System via *Discord Webhook* integriert.
+
+---
+
+### 6.2 Aufbau
+Die Web-App greift per kubectl get pods -o json auf die aktuellen Pod- und Containerinformationen zu und verarbeitet die JSON-Daten live in einer HTML-Tabelle.
+
+Jeder Container wird dargestellt mit:
+- Namespace
+- Pod-Name
+- Container-Name
+- Status
+- Restart-Zähler
+- Logs (Link)
+
+*Hinweis:*  
+Die Logs-Seite hebt alle WARNING und ERROR-Zeilen farblich hervor.
+
+- Dashboard aktualisiert sich alle *30 Sekunden*
+- Logs aktualisieren sich alle *10 Sekunden*
+
+---
+
+### 6.3 systemd-Dienst
+
+Ein eigener systemd-Dienst (k8sweb.service) wurde erstellt, um die Flask-App:
+
+- beim Booten automatisch zu starten
+- dauerhaft im Hintergrund laufen zu lassen
+- zuverlässig zu überwachen (automatischer Neustart bei Fehlern)
+
+---
+
+### 6.4 Alerting via Discord Webhook
+
+Ein Discord Webhook wurde eingebunden, um Container-Fehler automatisch zu melden.  
+Die App erkennt, wenn ein Container **nicht im Zustand running** ist, und sendet eine Nachricht mit:
+
+- Containername
+- Podname
+- Namespace
+- Zustand
+
+### 6.5 ✅ Was funktioniert:
+- **Manueller Test via curl** an den Webhook hat *erfolgreich* eine Nachricht in Discord gesendet.
+
+### 6.6 ❌ Was funktioniert nicht:
+- Die *automatischen Benachrichtigungen aus der App* erscheinen *nicht im Discord-Channel*.
+
+### 6.7 Status:
+- Der Webhook ist gültig
+- Der Code zur Benachrichtigung wurde eingebaut
+- Firewall, DNS, Rate-Limiting etc. wurden als mögliche Ursachen geprüft  
+→ *Fehlerquelle ist noch unklar*
+
+---
+
+### 6.8 Fazit
+
+- Die Anwendung läuft stabil im Browser und zeigt Container-Status sowie Logs übersichtlich an.
+- Das Alerting wurde vorbereitet, funktioniert im manuellen Test – aber nicht automatisch.
+- Eine genaue Fehleranalyse für das Alerting ist noch offen.
+
+
+## 7 Bünzli Shop (Projekt abbgebrochen)
+
+### 7.1 Ziel
+
+Ich wollte einen Shop auffbauen der wie folgt aussah:
+
+* **Frontend:** Vite, React, NGINX
+* **Admin Panel:** Vite, React, NGINX
+* **Backend API:** Node.js, Express
+* **Mailservice:** Node.js (für Bestellbestätigungen)
+* **PostgreSQL:** persistente Datenbank
+
+Alles sollte als **getrennte Docker-Container** laufen und über **GitHub Actions & GHCR** in einem AWS EKS Cluster deployed werden.
+
+---
+
+### 7.2 Projektstruktur
+
+```plaintext
+webshop/
+ ├─ admin/
+ │   ├─ src/
+ │   │   ├─ pages/
+ │   │   │   ├─ app.jsx
+ │   │   │   ├─ bestellungen.jsx
+ │   │   │   ├─ produkte.jsx
+ │   │   ├─ main.jsx
+ │   │   ├─ index.css
+ │   ├─ index.html
+ │   ├─ nginx.conf
+ │   ├─ Dockerfile
+ │   ├─ package.json
+ ├─ backend/
+ │   ├─ src/
+ │   │   ├─ index.js
+ │   ├─ .env
+ │   ├─ Dockerfile
+ │   ├─ package.json
+ ├─ frontend/
+ │   ├─ src/
+ │   │   ├─ main.jsx
+ │   │   ├─ index.css
+ │   ├─ index.html
+ │   ├─ nginx.conf
+ │   ├─ Dockerfile
+ │   ├─ package.json
+ ├─ mailservice/
+ │   ├─ src/
+ │   │   ├─ index.js
+ │   ├─ .env
+ │   ├─ Dockerfile
+ │   ├─ package.json
+ ├─ postgres/
+ │   ├─ init.sql
+ ├─ k8s/
+ │   ├─ namespace.yaml
+ │   ├─ backend.yaml
+ │   ├─ frontend.yaml
+ │   ├─ admin.yaml
+ │   ├─ mailservice.yaml
+ │   ├─ postgres.yaml
+ │   ├─ secrets.yaml
+ │   ├─ ingress.yaml
+ │   ├─ postgres-init-configmap.yaml
+ ├─ .github/workflows/
+ │   ├─ deploy-shop.yml
+ │   ├─ deploy-monitoring.yml
+ │   ├─ deploy.yml
+```
+
+---
+
+### 7.3 So sollte es funktionieren
+
+Ich wollte, dass:
+
+* Das **Frontend** die Produkte anzeigt und mit dem Backend über `/api` Routen spricht.
+* Das **Admin Panel** eine UI für Produkt- und Bestellverwaltung bietet.
+* Das **Backend** eine REST-API (`/produkte`, `/bestellungen`) mit JWT-Auth bereitstellt und mit Postgres kommuniziert.
+* Der **Mailservice** Bestellbestätigungen verschickt.
+* **Postgres** als persistente DB für Bestellungen & Produkte läuft.
+
+---
+
+### 7.4 Was ich erfolgreich umgesetzt habe
+
+* Ich habe **Docker-Multistage-Builds** für Frontend & Admin umgesetzt (Vite → NGINX).
+* Ich habe Images in die **GitHub Container Registry (GHCR)** gepusht.
+* Ich habe Secrets & `imagePullSecrets` für GHCR korrekt eingerichtet.
+* Ich habe Deployments & Services in Kubernetes sauber getrennt aufgesetzt.
+* Ich habe einen **GitHub Actions Workflow** geschrieben, um YAMLs automatisch auf meinen Cluster zu kopieren und anzuwenden.
+* Ich habe alle Komponenten lokal mit `docker run` getestet: Frontend & Backend liefen lokal, `/api`-Routen antworteten wie erwartet.
+
+---
+
+### 7.5 API-Tests
+
+Ich habe folgende API-Tests durchgeführt:
+
+| Endpunkt                 | Erwartetes Verhalten                         |
+| ------------------------ | -------------------------------------------- |
+| `GET /api/produkte`      | Gibt ein JSON-Array aller Produkte zurück    |
+| `POST /api/bestellungen` | Legt eine neue Bestellung an                 |
+| Auth via `JWT_SECRET`    | Nur Admin darf Bestellungen einsehen         |
+| Verbindung zu Postgres   | SELECT & INSERT funktionieren zuverlässig    |
+| Mailservice `/send`      | Simuliert/Loggt eine E-Mail-Benachrichtigung |
+
+---
+
+### 7.6 Mein Testverlauf
+
+| Testschritt                         | Ergebnis                                      |
+| ----------------------------------- | --------------------------------------------- |
+| `docker run` Frontend lokal         | ✅ React-Seite wurde angezeigt                 |
+| `docker run` Backend lokal          | ✅ `/api/produkte` funktionierte               |
+| Verbindung Frontend → Backend lokal | ✅ Mit `host.docker.internal`                  |
+| Cluster-Proxy-Auflösung             | ❌ Teilweise `host not found`                  |
+| GHCR Image Pull im Cluster          | ❌ `401 Unauthorized` mehrmals                 |
+| NGINX im Container                  | ✅ Lief, aber Proxy-Upstream stimmte oft nicht |
+
+---
+
+### 7.7 Probleme & Ursachen
+
+| Problem                      | Ursache                                                           |
+| ---------------------------- | ----------------------------------------------------------------- |
+| `ImagePullBackOff`           | GHCR Secret (`ghcr-auth`) war falsch oder mein PAT war abgelaufen |
+| `CrashLoopBackOff` bei NGINX | Falscher DNS Upstream: Service-Name nicht erreichbar              |
+| Pods `Pending`               | Disk-Pressure oder Control-Plane Taints blockierten Scheduling    |
+| Vite Build-Fehler            | `index.html` oder `index.css` fehlten oder Pfade waren falsch     |
+| Unterschied Cluster / lokal  | Unterschiedliche Proxy-Upstreams (`nginx.conf`) nötig             |
+
+---
+
+### 7.8 Beispiel-Fehler
+
+* `Could not resolve "./index.css"` → Die Datei fehlte → Build schlug fehl
+* `host not found in upstream` → Falscher Upstream Host in `nginx.conf` eingetragen
+* `401 Unauthorized` beim Image-Pull → Pull-Secret oder PAT nicht korrekt
+
+---
+
+### 7.9 Was ich daraus gelernt habe
+
+* Ich muss die lokale Config (`nginx.local.conf`) klar von der Cluster-Config (`nginx.cluster.conf`) trennen.
+* Service-Namen im Cluster müssen **exakt stimmen**, da DNS extrem sensibel ist.
+* `kubectl describe pod` zeigt immer, was schiefläuft (z. B. Events, 401, DNS-Probleme).
+* Mein GHCR PAT muss rechtzeitig erneuert werden; `read:packages` ist Pflicht.
+* Disk-Pressure auf Nodes blockiert Scheduling → ich muss Node-Ressourcen im Blick behalten.
+
+---
+
+### 7.10 Best Practices für mein nächstes Mal
+
+* Images immer lokal mit `docker run` testen, dann pushen & erst dann deployen.
+* Helm Charts oder Kustomize nutzen, um Umgebungen sauber zu trennen.
+* Für statische Apps bleibt NGINX super – aber Proxy-Upstream muss pro Env gesetzt werden.
+* Secrets & `imagePullSecrets` immer kontrollieren.
+* Monitoring mit Prometheus & Grafana mitlaufen lassen, um Ressourcenengpässe früh zu sehen.
 
 ---
