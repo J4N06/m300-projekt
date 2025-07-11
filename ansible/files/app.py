@@ -3,7 +3,7 @@ import subprocess
 import json
 import requests
 
-app = Flask(_name_)
+app = Flask(__name__)
 
 DISCORD_WEBHOOK_URL = "https://discord.com/api/webhooks/1393134059974168576/lYhch4nM42XQbvGW0B_FitpIRFhYB5Zbd1mtLhYeeB2_LIOEzwtKNDEi5SShyTKQBNU4"
 
@@ -12,12 +12,15 @@ def index():
     containers = []
     try:
         result = subprocess.run(
-            ["kubectl", "get", "pods", "-o", "json"],
+            ["kubectl", "get", "pods", "--all-namespaces", "-o", "json"],
             capture_output=True,
             text=True,
             check=True
         )
-        pod_data = json.loads(result.stdout)
+        try:
+            pod_data = json.loads(result.stdout)
+        except json.JSONDecodeError:
+            pod_data = {"items": []}
 
         for item in pod_data["items"]:
             pod_name = item["metadata"]["name"]
@@ -38,7 +41,7 @@ def index():
                         message = {
                             "content": f"🚨 Container *{c['name']}* im Pod {pod_name} (Namespace {namespace}) ist im Zustand: *{state.upper()}*!"
                         }
-                        requests.post(DISCORD_WEBHOOK_URL, json=message)
+                        requests.post(DISCORD_WEBHOOK_URL, json=message, timeout=5)
                     except Exception as e:
                         print(f"Fehler beim Senden an Discord: {e}")
     except Exception as e:
@@ -50,7 +53,7 @@ def index():
     <head>
       <meta charset="utf-8">
       <title>Kubernetes Container Dashboard</title>
-      <meta http-equiv="refresh" content="30">
+      <meta http-equiv="refresh" content="30" />
       <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     </head>
     <body class="p-4 bg-light">
@@ -90,7 +93,7 @@ def index():
                 </td>
                 <td>{{ c.restart_count }}</td>
                 <td>
-                  <a class="btn btn-sm btn-primary" href="/logs?pod={{ c.pod_name }}&container={{ c.container_name }}">View Logs</a>
+                  <a class="btn btn-sm btn-primary" href="/logs?pod={{ c.pod_name }}&container={{ c.container_name }}&namespace={{ c.namespace }}">View Logs</a>
                 </td>
               </tr>
             {% endfor %}
@@ -103,16 +106,19 @@ def index():
     """, containers=containers)
     return html
 
+
 @app.route("/logs")
 def logs():
     pod = request.args.get("pod")
     container = request.args.get("container")
-    if not pod or not container:
-        return "Missing pod/container parameters", 400
+    namespace = request.args.get("namespace")
+
+    if not pod or not container or not namespace:
+        return "Missing parameters: pod, container, namespace required.", 400
 
     try:
         result = subprocess.run(
-            ["kubectl", "logs", pod, "-c", container, "--tail=100"],
+            ["kubectl", "logs", pod, "-c", container, "-n", namespace, "--tail=100"],
             capture_output=True,
             text=True,
             check=True
@@ -135,7 +141,7 @@ def logs():
     <head>
       <meta charset="utf-8">
       <title>Logs for {pod}/{container}</title>
-      <meta http-equiv="refresh" content="10">
+      <meta http-equiv="refresh" content="10" />
       <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
       <style>
         pre {{
@@ -150,7 +156,7 @@ def logs():
     </head>
     <body class="p-4 bg-light">
       <div class="container">
-        <h2>Logs für <code>{pod}/{container}</code></h2>
+        <h2>Logs für <code>{pod}/{container}</code> (Namespace: {namespace})</h2>
         <pre>{formatted_logs}</pre>
         <a class="btn btn-secondary mt-3" href="/">Zurück</a>
         <p class="text-muted mt-2">Automatische Aktualisierung alle 10 Sekunden</p>
@@ -160,5 +166,6 @@ def logs():
     """
     return html
 
-if _name_ == "_main_":
-    app.run(host="0.0.0.0", port=8080)
+
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=8080)
